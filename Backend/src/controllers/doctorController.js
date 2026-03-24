@@ -7,7 +7,7 @@ const syncDoctor = async (req, res) => {
     const doctor = await Doctor.findOneAndUpdate(
       { clerkId },
       { $setOnInsert: { clerkId, firstName, lastName, email } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     )
     res.json(doctor)
   } catch (err) {
@@ -35,7 +35,7 @@ const updateProfile = async (req, res) => {
     const doctor = await Doctor.findOneAndUpdate(
       { clerkId: req.auth.userId },
       { $set: update },
-      { new: true }
+      { returnDocument: 'after' }
     )
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
     res.json(doctor)
@@ -49,8 +49,9 @@ const updateAvailability = async (req, res) => {
     const doctor = await Doctor.findOneAndUpdate(
       { clerkId: req.auth.userId },
       { $set: { availability: req.body.availability } },
-      { new: true }
+      { returnDocument: 'after' }
     )
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
     res.json(doctor)
   } catch (err) {
     res.status(500).json({ error: err.message })

@@ -11,8 +11,11 @@ export const useDashboard = () => {
   const fetchDashboard = useCallback(async () => {
     try {
       setLoading(true)
-      const result = await apiFetch('/doctors/dashboard', getToken)
-      setData(result)
+      const [result, earnings] = await Promise.all([
+        apiFetch('/doctors/dashboard', getToken),
+        apiFetch('/consultations/earnings', getToken),
+      ])
+      setData({ ...result, earnings })
     } catch (err) {
       setError(err.message)
     } finally {
