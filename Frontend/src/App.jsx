@@ -5,6 +5,7 @@ import Login from './components/pages/Login'
 import Signup from './components/pages/Signup'
 import Home from './components/Home'
 import DoctorDashboard from './components/pages/DoctorDashboard'
+import PatientDashboard from './components/pages/PatientDashboard'
 import RoleRedirect from './components/RoleRedirect'
 
 const ProtectedRoute = ({ children }) => (
@@ -24,6 +25,7 @@ function App() {
       <Route path="/login/sso-callback" element={<AuthenticateWithRedirectCallback afterSignInUrl="/redirect" afterSignUpUrl="/redirect" />} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/doctor-dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
+      <Route path="/patient-dashboard" element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>} />
     </Routes>
   )
 }

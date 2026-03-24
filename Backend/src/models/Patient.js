@@ -7,7 +7,8 @@ const patientSchema = new mongoose.Schema({
   email:     { type: String, required: true, unique: true },
   phone:     { type: String, default: '' },
   dob:       { type: Date },
-  gender:    { type: String, enum: ['Male', 'Female', 'Other'], default: 'Other' },
+  gender:       { type: String, enum: ['Male', 'Female', 'Other'], default: 'Other' },
+  profileImage: { type: String, default: '' },
 }, { timestamps: true })
 
 module.exports = mongoose.model('Patient', patientSchema)
