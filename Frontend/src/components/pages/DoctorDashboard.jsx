@@ -319,10 +319,10 @@ const DoctorDashboard = () => {
   const doctor = data?.doctor
 
   const stats = [
-    { icon: Users,        label: 'Total Patients',         value: data?.stats.totalPatients,                                    color: 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300'     },
-    { icon: BookCheck,    label: 'Successfully Appointed', value: data?.stats.successfullyAppointed,                            color: 'bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-300'  },
-    { icon: Clock,        label: 'Pending Bookings',       value: data?.stats.pendingBookings,                                  color: 'bg-yellow-50 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300'},
-    { icon: CalendarDays, label: 'Requested Appointments', value: data?.stats.requestedAppointments,                            color: 'bg-purple-50 dark:bg-purple-900 text-purple-600 dark:text-purple-300'},
+    { icon: Users,        label: 'Total Patients',         value: data?.stats?.totalPatients,                                    color: 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300'     },
+    { icon: BookCheck,    label: 'Successfully Appointed', value: data?.stats?.successfullyAppointed,                            color: 'bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-300'  },
+    { icon: Clock,        label: 'Pending Bookings',       value: data?.stats?.pendingBookings,                                  color: 'bg-yellow-50 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300'},
+    { icon: CalendarDays, label: 'Requested Appointments', value: data?.stats?.requestedAppointments,                            color: 'bg-purple-50 dark:bg-purple-900 text-purple-600 dark:text-purple-300'},
     { icon: DollarSign,   label: 'Monthly Earnings',       value: data?.earnings ? `$${data.earnings.monthlyEarnings}` : '—',  color: 'bg-emerald-50 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300'},
     { icon: ClipboardList,label: 'Prescriptions Issued',   value: data?.earnings?.prescriptionsIssued ?? '—',                  color: 'bg-pink-50 dark:bg-pink-900 text-pink-600 dark:text-pink-300'      },
   ]
@@ -620,7 +620,7 @@ const DoctorDashboard = () => {
 
           {/* CONSULTATIONS */}
           {active === 'consultations' && (
-            <ConsultationsSection appointments={data?.todayAppointments} navigate={navigate} />
+            <ConsultationsSection appointments={data?.todayAppointments ?? []} navigate={navigate} />
           )}
 
           {/* PREVIOUS CONSULTATIONS */}

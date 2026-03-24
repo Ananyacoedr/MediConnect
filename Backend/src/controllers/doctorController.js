@@ -1,5 +1,6 @@
 const Doctor = require('../models/Doctor')
 const Appointment = require('../models/Appointment')
+require('../models/Patient')
 
 const syncDoctor = async (req, res) => {
   try {
