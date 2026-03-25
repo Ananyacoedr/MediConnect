@@ -463,7 +463,7 @@ const DoctorDashboard = () => {
                     ) : (
                       <div className="relative pl-4">
                         <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-blue-100 dark:bg-blue-900"/>
-                        {data.todayAppointments.map(appt => (
+                        {data?.todayAppointments?.map(appt => (
                           <div key={appt._id} className="relative flex gap-3 pb-4 last:pb-0">
                             <div className="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-blue-500 bg-white dark:bg-gray-800"/>
                             <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-xl px-3 py-2">
@@ -497,7 +497,7 @@ const DoctorDashboard = () => {
                         <p className="text-sm">No pending requests</p>
                       </div>
                     ) : (
-                      data.pendingRequests.map(appt => (
+                      data?.pendingRequests?.map(appt => (
                         <div key={appt._id} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 text-xs font-bold">
