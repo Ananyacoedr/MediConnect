@@ -36,6 +36,30 @@ const endConsultation = async (req, res) => {
       { returnDocument: 'after' }
     ).populate('patient', 'firstName lastName')
     if (!appt) return res.status(404).json({ error: 'Appointment not found' })
+
+    // Auto-fill patient's medicine cart if prescription exists
+    if (appt.prescription?.length) {
+      const MedicineCart = require('../models/MedicineCart')
+      const Doctor = require('../models/Doctor')
+      const doctor = await Doctor.findById(appt.doctor)
+      const OUT_OF_STOCK = ['Sumatriptan', 'Propranolol']
+      const ALTERNATIVES = { 'Sumatriptan': 'Rizatriptan 10mg', 'Propranolol': 'Metoprolol 50mg' }
+      await MedicineCart.deleteMany({ patient: appt.patient._id, appointment: appt._id, ordered: false })
+      await MedicineCart.insertMany(appt.prescription.map(p => ({
+        patient:     appt.patient._id,
+        appointment: appt._id,
+        medicine:    p.medicine,
+        dosage:      p.dosage,
+        duration:    p.duration,
+        notes:       p.notes,
+        quantity:    1,
+        inStock:     !OUT_OF_STOCK.includes(p.medicine),
+        alternative: ALTERNATIVES[p.medicine] || '',
+        doctorName:  `${doctor?.title || 'Dr.'} ${doctor?.firstName} ${doctor?.lastName}`,
+        diagnosis:   appt.diagnosis || '',
+      })))
+    }
+
     res.json(appt)
   } catch (err) {
     res.status(500).json({ error: err.message })

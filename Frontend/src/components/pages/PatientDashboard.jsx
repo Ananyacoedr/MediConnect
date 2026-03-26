@@ -1,6 +1,5 @@
 import { useUser, useClerk } from '@clerk/clerk-react'
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { usePatientDashboard } from '@/hooks/usePatientDashboard'
@@ -11,7 +10,7 @@ import SymptomChecker from '@/components/SymptomChecker'
 import {
   HeartPulse, Search, CalendarPlus, Video, FileText,
   Pill, Truck, Bell, History, CalendarDays, CheckCircle,
-  Clock, ChevronRight, Loader2, Camera, UserCircle, X
+  Clock, ChevronRight, Loader2, Camera, UserCircle
 } from 'lucide-react'
 
 const statusStyle = {
@@ -77,14 +76,14 @@ const AppointmentPanel = ({ title, appointments, onClose }) => (
 )
 
 const quickActions = [
-  { icon: Search,       label: 'Find Doctors',      color: 'bg-blue-50 text-blue-600'    },
-  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600'  },
-  { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 text-purple-600'},
-  { icon: FileText,     label: 'Upload Reports',    color: 'bg-orange-50 text-orange-600'},
-  { icon: Pill,         label: 'My Prescriptions',  color: 'bg-pink-50 text-pink-600'    },
-  { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 text-teal-600'    },
-  { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 text-yellow-600'},
-  { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600'   },
+  { icon: Search,      label: 'Find Doctors',       color: 'bg-blue-50 text-blue-600'    },
+  { icon: CalendarPlus,label: 'Book Appointment',   color: 'bg-green-50 text-green-600'  },
+  { icon: Video,       label: 'Join Consultation',  color: 'bg-purple-50 text-purple-600'},
+  { icon: FileText,    label: 'Upload Reports',     color: 'bg-orange-50 text-orange-600'},
+  { icon: Pill,        label: 'My Prescriptions',   color: 'bg-pink-50 text-pink-600'    },
+  { icon: Truck,       label: 'Order Medicines',    color: 'bg-teal-50 text-teal-600'    },
+  { icon: Bell,        label: 'Reminders',          color: 'bg-yellow-50 text-yellow-600'},
+  { icon: History,     label: 'History',            color: 'bg-gray-100 text-gray-600'   },
 ]
 
 const PatientDashboard = () => {
@@ -95,18 +94,8 @@ const PatientDashboard = () => {
   const { data, loading, error } = usePatientDashboard()
   const [profileImage, setProfileImage] = useState(null)
   const [uploading, setUploading] = useState(false)
-  const [activePanel, setActivePanel] = useState(null)
   const fileInputRef = useRef(null)
   useSyncUser()
-
-  const togglePanel = (key) => setActivePanel(prev => prev === key ? null : key)
-
-  const recent = data?.recentAppointments || []
-  const panelData = {
-    total:     { title: 'All Appointments',       appointments: recent },
-    completed: { title: 'Completed Appointments', appointments: recent.filter(a => a.status === 'Completed') },
-    pending:   { title: 'Pending Appointments',   appointments: recent.filter(a => a.status === 'Pending') },
-  }
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0]
@@ -141,6 +130,19 @@ const PatientDashboard = () => {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">Patient</span>
+
+          {/* Cart icon */}
+          <button
+            onClick={() => navigate('/prescription-cart')}
+            className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-600 hover:text-blue-600"
+          >
+            <ShoppingCart size={22} strokeWidth={1.8} />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
+                {cartCount > 9 ? '9+' : cartCount}
+              </span>
+            )}
+          </button>
 
           {/* Profile Picture */}
           <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
@@ -185,10 +187,9 @@ const PatientDashboard = () => {
         <section>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {quickActions.map(({ icon: Icon, label, color }) => (
+            {quickActions.map(({ icon: Icon, label, color, to }) => (
               <button
                 key={label}
-                onClick={() => label === 'Find Doctors' && navigate('/find-doctors')}
                 className="flex flex-col items-center gap-3 p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
               >
                 <div className={`p-3 rounded-full ${color}`}><Icon size={22} strokeWidth={1.5} /></div>
