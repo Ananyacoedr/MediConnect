@@ -5,11 +5,18 @@ require('../models/Patient')
 const syncDoctor = async (req, res) => {
   try {
     const { clerkId, firstName, lastName, email } = req.body
-    const doctor = await Doctor.findOneAndUpdate(
-      { clerkId },
-      { $setOnInsert: { clerkId, firstName, lastName, email } },
-      { upsert: true, returnDocument: 'after' }
-    )
+    // Try to find by clerkId first, then fall back to email (handles seeded doctors)
+    let doctor = await Doctor.findOne({ clerkId })
+    if (!doctor && email) {
+      doctor = await Doctor.findOneAndUpdate(
+        { email },
+        { $set: { clerkId } },
+        { new: true }
+      )
+    }
+    if (!doctor) {
+      doctor = await Doctor.create({ clerkId, firstName, lastName, email })
+    }
     res.json(doctor)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -99,4 +106,19 @@ const getDashboardStats = async (req, res) => {
   }
 }
 
-module.exports = { syncDoctor, getProfile, updateProfile, updateAvailability, getDashboardStats }
+const getAllAppointments = async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ clerkId: req.auth.userId })
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
+
+    const appointments = await Appointment.find({ doctor: doctor._id })
+      .populate('patient', 'firstName lastName email phone gender dob profileImage')
+      .sort({ date: -1, time: -1 })
+
+    res.json(appointments)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
+module.exports = { syncDoctor, getProfile, updateProfile, updateAvailability, getDashboardStats, getAllAppointments }
