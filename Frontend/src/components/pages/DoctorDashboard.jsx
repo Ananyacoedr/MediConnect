@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { useUser, useClerk } from '@clerk/clerk-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -9,6 +9,7 @@ import { useDashboard } from '@/hooks/useDashboard'
 import { useSyncUser } from '@/hooks/useSyncUser'
 import { useAvailability } from '@/hooks/useAvailability'
 import ThemeToggle from '@/components/ThemeToggle'
+import { ProfileSection } from '@/components/pages/DoctorProfile'
 import {
   HeartPulse, CalendarDays, Users, BookCheck, Clock,
   ChevronRight, Loader2,
@@ -324,17 +325,17 @@ const ConsultationsSection = ({ appointments, navigate }) => {
 }
 
 // ── Previous Consultations Section ───────────────────────────────────────
-const PreviousConsultationsSection = ({ user }) => {
+const PreviousConsultationsSection = ({ getToken }) => {
   const navigate = useNavigate()
   const [consultations, setConsultations] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetch('/consultations/previous', user?.id)
+    apiFetch('/consultations/previous', getToken)
       .then(setConsultations)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [user?.id])
+  }, [])
 
   return (
     <div className="space-y-4">
@@ -481,10 +482,94 @@ const AvailabilitySection = ({ initialAvailability }) => {
   )
 }
 
+// ── Patients Section ─────────────────────────────────────────────────────
+const PatientsSection = ({ getToken, navigate }) => {
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [filter, setFilter]             = useState('today')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await apiFetch('/doctors/appointments', getToken)
+      setAppointments(data)
+    } catch {}
+    finally { setLoading(false) }
+  }, [getToken])
+
+  useEffect(() => { load() }, [load])
+
+  const today = new Date(); today.setHours(0,0,0,0)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
+
+  const displayed = filter === 'today'
+    ? appointments.filter(a => { const d = new Date(a.date); return d >= today && d < tomorrow })
+    : appointments
+
+  // Unique patients
+  const seen = new Set()
+  const uniquePatients = displayed.filter(a => {
+    const id = a.patient?._id
+    if (seen.has(id)) return false
+    seen.add(id); return true
+  })
+
+  return (
+    <div className="space-y-4">
+      <SectionTitle>My Patients</SectionTitle>
+      <div className="flex gap-2">
+        {['today','all'].map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              filter === f ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400'
+            }`}>
+            {f === 'today' ? "Today's Patients" : 'All Patients'}
+          </button>
+        ))}
+      </div>
+      <Card>
+        <CardContent className="pt-4">
+          {loading ? (
+            <div className="flex items-center gap-2 text-gray-400 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>
+          ) : uniquePatients.length === 0 ? (
+            <div className="flex flex-col items-center py-10 text-gray-400 gap-2">
+              <Users size={36} strokeWidth={1} />
+              <p className="text-sm">No patients {filter === 'today' ? 'today' : 'found'}.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {uniquePatients.map(appt => (
+                <div key={appt._id} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    {appt.patient?.profileImage
+                      ? <img src={appt.patient.profileImage} className="w-10 h-10 rounded-full object-cover border" alt="patient" />
+                      : <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold">
+                          {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
+                        </div>
+                    }
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient?.firstName} {appt.patient?.lastName}</p>
+                      <p className="text-xs text-gray-400">{appt.time} · <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${statusStyle[appt.status]}`}>{appt.status}</span></p>
+                    </div>
+                  </div>
+                  <button onClick={() => navigate(`/consultation/${appt._id}`)}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 hover:bg-blue-100">
+                    View
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 // ── Appointments Section ──────────────────────────────────────────────────
 const FILTERS = ['All', 'Pending', 'Confirmed', 'Cancelled', 'Completed']
 
-const AppointmentsSection = ({ user, updateAppointmentStatus, navigate }) => {
+const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) => {
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('All')
@@ -494,11 +579,11 @@ const AppointmentsSection = ({ user, updateAppointmentStatus, navigate }) => {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await apiFetch('/doctors/appointments', user.id)
+      const data = await apiFetch('/doctors/appointments', getToken)
       setAppointments(data)
     } catch {}
     finally { setLoading(false) }
-  }, [user.id])
+  }, [getToken])
 
   useEffect(() => { load() }, [load])
 
@@ -690,6 +775,7 @@ const AppointmentsSection = ({ user, updateAppointmentStatus, navigate }) => {
 const DoctorDashboard = () => {
   const { user } = useUser()
   const { signOut } = useClerk()
+  const { getToken } = useAuth()
   const navigate = useNavigate()
   const { data, loading, error, updateAppointmentStatus } = useDashboard()
   const [active, setActive] = useState('overview')
@@ -749,9 +835,9 @@ const DoctorDashboard = () => {
             {NAV_ITEMS.map(({ key, icon: Icon, label }) => (
               <button
                 key={key}
-                onClick={() => key === 'profile' ? navigate('/doctor-profile') : setActive(key)}
+                onClick={() => setActive(key)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full text-left
-                  ${active === key && key !== 'profile'
+                  ${active === key
                     ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
                   }`}
@@ -779,7 +865,7 @@ const DoctorDashboard = () => {
           <div className="mb-8 flex items-start justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Good day, <span className="text-blue-600">{doctor?.title || 'Dr.'} {doctor?.lastName || user?.lastName || user?.firstName}!</span>
+                Good day, <span className="text-blue-600">{doctor?.title ? `${doctor.title} ${doctor?.firstName}` : doctor?.firstName || user?.firstName}!</span>
               </h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Here's your practice overview.</p>
             </div>
@@ -920,46 +1006,14 @@ const DoctorDashboard = () => {
             </div>
           )}
 
-          {/* MY PATIENTS */}
+          {active === 'profile' && <ProfileSection />}
           {active === 'patients' && (
-            <div className="space-y-4">
-              <SectionTitle>My Patients</SectionTitle>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Today's Patients</CardTitle>
-                    <button className="text-xs text-blue-600 flex items-center gap-1 hover:underline">View all <ChevronRight size={14} /></button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={16} className="animate-spin" /> Loading...</div>
-                  ) : data?.todayAppointments?.length === 0 ? (
-                    <p className="text-sm text-gray-400 py-2">No patients today.</p>
-                  ) : (
-                    data?.todayAppointments?.map(appt => (
-                      <div key={appt._id} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-xs font-bold">
-                            {appt.patient.firstName[0]}{appt.patient.lastName[0]}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient.firstName} {appt.patient.lastName}</p>
-                            <p className="text-xs text-gray-400">{appt.time}</p>
-                          </div>
-                        </div>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <PatientsSection getToken={getToken} navigate={navigate} />
           )}
 
           {/* VIEW APPOINTMENTS */}
           {active === 'appointments' && (
-            <AppointmentsSection user={user} updateAppointmentStatus={updateAppointmentStatus} navigate={navigate} />
+            <AppointmentsSection getToken={getToken} updateAppointmentStatus={updateAppointmentStatus} navigate={navigate} />
           )}
 
           {/* CONSULTATIONS */}
@@ -968,7 +1022,7 @@ const DoctorDashboard = () => {
           )}
 
           {/* PREVIOUS CONSULTATIONS */}
-          {active === 'previous' && <PreviousConsultationsSection user={user} />}
+          {active === 'previous' && <PreviousConsultationsSection getToken={getToken} />}
 
           {/* AVAILABILITY */}
           {active === 'availability' && (

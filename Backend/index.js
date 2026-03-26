@@ -12,7 +12,8 @@ const cartRoutes         = require('./src/routes/cart')
 const app = express()
 
 app.use(cors({ origin: /^http:\/\/localhost:\d+$/, credentials: true }))
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ limit: '10mb', extended: true }))
 
 app.use('/api/doctors',       doctorRoutes)
 app.use('/api/appointments',  appointmentRoutes)
