@@ -26,7 +26,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/redirect" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
-      <Route path="/login/sso-callback" element={<AuthenticateWithRedirectCallback afterSignInUrl="/redirect" afterSignUpUrl="/redirect" />} />
+      <Route path="/login/sso-callback" element={<AuthenticateWithRedirectCallback fallbackRedirectUrl="/redirect" />} />
       <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/doctor-dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
       <Route path="/patient-dashboard" element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>} />

@@ -8,7 +8,7 @@ const syncPatient = async (req, res) => {
     const patient = await Patient.findOneAndUpdate(
       { clerkId },
       { $set: { profileImage: profileImage || '' }, $setOnInsert: { clerkId, firstName, lastName, email } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     )
     res.json(patient)
   } catch (err) {
@@ -34,7 +34,7 @@ const updateProfile = async (req, res) => {
     const patient = await Patient.findOneAndUpdate(
       { clerkId: req.auth.userId },
       { $set: update },
-      { new: true }
+      { returnDocument: 'after' }
     )
     res.json(patient)
   } catch (err) {
@@ -48,7 +48,7 @@ const updateProfileImage = async (req, res) => {
     const patient = await Patient.findOneAndUpdate(
       { clerkId: req.auth.userId },
       { $set: { profileImage } },
-      { new: true }
+      { returnDocument: 'after' }
     )
     res.json(patient)
   } catch (err) {

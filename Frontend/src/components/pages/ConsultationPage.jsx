@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import ThemeToggle from '@/components/ThemeToggle'
+import { useWebRTC } from '@/hooks/useWebRTC'
 import {
   HeartPulse, ArrowLeft, Video, Phone, MessageSquare,
   FileText, Stethoscope, Plus, Trash2, Loader2,
-  CheckCircle2, User, Calendar, ClipboardList, AlertCircle
+  CheckCircle2, User, Calendar, ClipboardList, AlertCircle,
+  MicOff, VideoOff, PhoneOff, Send
 } from 'lucide-react'
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -38,6 +41,14 @@ const ConsultationPage = () => {
   const [success, setSuccess]   = useState(false)
   const [error, setError]       = useState(null)
   const [activeCall, setActiveCall] = useState(null)
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatInput, setChatInput] = useState('')
+  const localVideoRef = useRef(null)
+  const remoteVideoRef = useRef(null)
+  const chatEndRef = useRef(null)
+
+  const { startCall, stopCall, toggleMic, toggleCam, localStream, remoteStream, callState, micMuted, camOff } =
+    useWebRTC(id, 'doctor')
 
   const [form, setForm] = useState({
     consultationNotes: '',
@@ -107,6 +118,33 @@ const ConsultationPage = () => {
       setError(err.message)
       setEnding(false)
     }
+  }
+
+  // Attach streams to video elements whenever they change
+  useEffect(() => {
+    if (localVideoRef.current && localStream) localVideoRef.current.srcObject = localStream
+  }, [localStream])
+
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) remoteVideoRef.current.srcObject = remoteStream
+  }, [remoteStream])
+
+  const handleCallToggle = (type) => {
+    if (activeCall === type) {
+      stopCall()
+      setActiveCall(null)
+    } else {
+      if (activeCall) stopCall()
+      setActiveCall(type)
+      if (type !== 'chat') startCall(type)
+    }
+  }
+
+  const sendChat = () => {
+    if (!chatInput.trim()) return
+    setChatMessages(m => [...m, { from: 'doctor', text: chatInput.trim(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }])
+    setChatInput('')
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
   }
 
   const patient = appt?.patient
@@ -246,60 +284,199 @@ const ConsultationPage = () => {
           {/* ── RIGHT: Consultation Actions + Notes ── */}
           <div className="lg:col-span-2 flex flex-col gap-6">
 
-            {/* Consultation Actions */}
-            <Section title="Consultation Actions" icon={Video}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { icon: Video,         label: 'Video Call',   color: 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-700',   action: 'video'   },
-                  { icon: Phone,         label: 'Audio Call',   color: 'bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-300 border-green-200 dark:border-green-700', action: 'audio'   },
-                  { icon: MessageSquare, label: 'Start Chat',   color: 'bg-purple-50 dark:bg-purple-900 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-700', action: 'chat' },
-                  { icon: FileText,      label: 'View Details', color: 'bg-orange-50 dark:bg-orange-900 text-orange-600 dark:text-orange-300 border-orange-200 dark:border-orange-700', action: 'details'},
-                ].map(({ icon: Icon, label, color, action }) => (
-                  <button
-                    key={action}
-                    onClick={() => setActiveCall(activeCall === action ? null : action)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
-                      ${activeCall === action ? color + ' shadow-md scale-95' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300'}`}
-                  >
-                    <Icon size={20} strokeWidth={1.8} className={activeCall === action ? '' : 'text-gray-500 dark:text-gray-400'} />
-                    <span className={`text-xs font-medium ${activeCall === action ? '' : 'text-gray-600 dark:text-gray-400'}`}>{label}</span>
-                  </button>
-                ))}
+            {/* ── Consultation Actions ── */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+                <Video size={16} className="text-blue-600" /> Consultation Actions
+              </p>
+
+              {/* Action buttons */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <button
+                  type="button"
+                  onClick={() => handleCallToggle('video')}
+                  style={{ cursor: 'pointer', outline: 'none' }}
+                  className={cn(
+                    'flex flex-col items-center gap-2 py-4 rounded-xl transition-all select-none',
+                    activeCall === 'video'
+                      ? 'bg-blue-50 text-blue-600 ring-2 ring-blue-400 shadow-md'
+                      : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 hover:ring-blue-300 hover:text-blue-600 hover:bg-blue-50'
+                  )}
+                >
+                  <Video size={22} strokeWidth={1.8} />
+                  <span className="text-xs font-semibold">{activeCall === 'video' ? 'End Video' : 'Video Call'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCallToggle('audio')}
+                  style={{ cursor: 'pointer', outline: 'none' }}
+                  className={cn(
+                    'flex flex-col items-center gap-2 py-4 rounded-xl transition-all select-none',
+                    activeCall === 'audio'
+                      ? 'bg-green-50 text-green-600 ring-2 ring-green-400 shadow-md'
+                      : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 hover:ring-green-300 hover:text-green-600 hover:bg-green-50'
+                  )}
+                >
+                  <Phone size={22} strokeWidth={1.8} />
+                  <span className="text-xs font-semibold">{activeCall === 'audio' ? 'End Audio' : 'Audio Call'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCallToggle('chat')}
+                  style={{ cursor: 'pointer', outline: 'none' }}
+                  className={cn(
+                    'flex flex-col items-center gap-2 py-4 rounded-xl transition-all select-none',
+                    activeCall === 'chat'
+                      ? 'bg-purple-50 text-purple-600 ring-2 ring-purple-400 shadow-md'
+                      : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 hover:ring-purple-300 hover:text-purple-600 hover:bg-purple-50'
+                  )}
+                >
+                  <MessageSquare size={22} strokeWidth={1.8} />
+                  <span className="text-xs font-semibold">{activeCall === 'chat' ? 'Close Chat' : 'Start Chat'}</span>
+                </button>
               </div>
 
-              {/* Active call preview */}
-              {(activeCall === 'video' || activeCall === 'audio') && (
-                <div className="mt-4 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                  <div className="bg-gray-900 flex gap-2 p-2">
-                    <div className="flex-1 h-40 rounded-lg bg-gray-800 flex items-center justify-center text-gray-400 text-sm">
-                      {activeCall === 'video' ? '📹 Patient Camera' : '🎙️ Audio Only'}
+              {/* Video Call Panel */}
+              {activeCall === 'video' && (
+                <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                  <div className="bg-gray-900 relative flex gap-2 p-3 min-h-[200px]">
+                    {/* Remote (patient) video */}
+                    <div className="flex-1 rounded-lg bg-gray-800 overflow-hidden relative flex items-center justify-center">
+                      {remoteStream ? (
+                        <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-gray-400 gap-2 w-full h-full">
+                          <Video size={28} strokeWidth={1} />
+                          <span className="text-xs">
+                            {callState === 'waiting' ? `Waiting for ${patient?.firstName}…` : `Connecting…`}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="w-28 h-40 rounded-lg bg-gray-700 flex items-center justify-center text-gray-400 text-xs">Your Camera</div>
+                    {/* Local (doctor) video */}
+                    <div className="w-32 rounded-lg bg-gray-700 overflow-hidden relative flex items-center justify-center">
+                      <video
+                        ref={localVideoRef}
+                        autoPlay muted playsInline
+                        className={`w-full h-full object-cover ${camOff ? 'hidden' : ''}`}
+                      />
+                      {camOff && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 gap-1">
+                          <VideoOff size={20} /><span className="text-xs">Cam off</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between px-4 py-2 bg-gray-800">
-                    <span className="text-xs text-green-400 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" /> Live · {activeCall === 'video' ? 'Video' : 'Audio'} Call
+                    <span className="text-xs text-green-400 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse inline-block" />
+                      {callState === 'connected' ? 'Connected · Video Call' : 'Waiting for patient…'}
                     </span>
-                    <button onClick={() => setActiveCall(null)} className="text-xs text-red-400 hover:text-red-300 font-medium">End Call</button>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={toggleMic}
+                        className={`p-1.5 rounded-full transition-colors ${micMuted ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}>
+                        <MicOff size={13} />
+                      </button>
+                      <button type="button" onClick={toggleCam}
+                        className={`p-1.5 rounded-full transition-colors ${camOff ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}>
+                        <VideoOff size={13} />
+                      </button>
+                      <button type="button" onClick={() => handleCallToggle('video')}
+                        className="flex items-center gap-1 px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-full font-medium">
+                        <PhoneOff size={12} /> End
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {activeCall === 'chat' && (
-                <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-                  <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
-                    Chat with {patient?.firstName}
-                  </div>
-                  <div className="h-32 px-4 py-3 flex items-center justify-center text-sm text-gray-400">
-                    Chat feature — integrate with your messaging service
-                  </div>
-                  <div className="flex gap-2 px-3 py-2 border-t border-gray-200 dark:border-gray-600">
-                    <input className={inputCls} placeholder="Type a message..." />
-                    <Button size="sm">Send</Button>
+              {/* Audio Call Panel */}
+              {activeCall === 'audio' && (
+                <div className="rounded-xl border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-950 p-5">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                      <Phone size={28} className="text-green-600 dark:text-green-300" strokeWidth={1.5} />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-semibold text-green-800 dark:text-green-200">{patient?.firstName} {patient?.lastName}</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center justify-center gap-1 mt-1">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
+                        {callState === 'connected' ? 'Connected · Audio call' : 'Waiting for patient…'}
+                      </p>
+                    </div>
+                    {/* hidden audio element for remote stream */}
+                    {remoteStream && <audio ref={el => { if (el) el.srcObject = remoteStream }} autoPlay />}
+                    <div className="flex items-end gap-1 h-8">
+                      {[3,6,4,8,5,7,3,6,4,8,5,7,3].map((h, i) => (
+                        <span key={i} style={{ height: `${h * 3}px`, animationDelay: `${i * 80}ms` }}
+                          className={`w-1 rounded-full animate-pulse ${micMuted ? 'bg-gray-400' : 'bg-green-500'}`} />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={toggleMic}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                          micMuted ? 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 border border-red-300'
+                            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50'
+                        }`}>
+                        <MicOff size={14} /> {micMuted ? 'Unmute' : 'Mute'}
+                      </button>
+                      <button type="button" onClick={() => handleCallToggle('audio')}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium">
+                        <PhoneOff size={14} /> End Call
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
-            </Section>
+
+              {/* Chat Panel */}
+              {activeCall === 'chat' && (
+                <div className="rounded-xl border border-purple-200 dark:border-purple-700 overflow-hidden flex flex-col" style={{ height: '320px' }}>
+                  <div className="bg-purple-50 dark:bg-purple-900 px-4 py-2.5 border-b border-purple-200 dark:border-purple-700 flex items-center gap-2">
+                    <MessageSquare size={14} className="text-purple-600 dark:text-purple-300" />
+                    <span className="text-xs font-semibold text-purple-700 dark:text-purple-200">
+                      Chat with {patient?.firstName} {patient?.lastName}
+                    </span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-4 py-3 bg-white dark:bg-gray-800 flex flex-col gap-2">
+                    {chatMessages.length === 0 && (
+                      <p className="text-xs text-gray-400 text-center mt-6">No messages yet. Start the conversation.</p>
+                    )}
+                    {chatMessages.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.from === 'doctor' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
+                          msg.from === 'doctor'
+                            ? 'bg-blue-600 text-white rounded-br-sm'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-sm'
+                        }`}>
+                          <p>{msg.text}</p>
+                          <p className={`text-[10px] mt-0.5 ${msg.from === 'doctor' ? 'text-blue-200' : 'text-gray-400'}`}>{msg.time}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={chatEndRef} />
+                  </div>
+                  <div className="flex gap-2 px-3 py-2.5 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                    <input
+                      className={inputCls}
+                      placeholder="Type a message…"
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && sendChat()}
+                    />
+                    <button
+                      type="button"
+                      onClick={sendChat}
+                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1 text-sm font-medium shrink-0"
+                    >
+                      <Send size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Consultation Notes */}
             <Section title="Consultation Notes" icon={FileText}>
