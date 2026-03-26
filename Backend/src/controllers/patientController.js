@@ -178,6 +178,7 @@ const getByClerkId = async (req, res) => {
   }
 }
 
+const getDoctors = async (req, res) => {
   try {
     const { specialty } = req.query
     const filter = specialty ? { specialty: { $regex: specialty, $options: 'i' } } : {}
