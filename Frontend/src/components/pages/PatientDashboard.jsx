@@ -1,12 +1,11 @@
-import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
-import { useState, useRef } from 'react'
+import { useUser, useClerk } from '@clerk/clerk-react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { usePatientDashboard } from '@/hooks/usePatientDashboard'
 import { useSyncUser } from '@/hooks/useSyncUser'
 import { apiFetch } from '@/lib/api'
-<<<<<<< HEAD
 import {
   HeartPulse, Search, CalendarPlus, Video, FileText,
   Pill, Truck, Bell, History, CalendarDays, CheckCircle,
@@ -32,16 +31,6 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
   </Card>
 )
 
-=======
-import SymptomChecker from '@/components/SymptomChecker'
-import {
-  HeartPulse, Search, CalendarPlus, Video, FileText,
-  Pill, Truck, Bell, History, CalendarDays, CheckCircle,
-  Clock, ChevronRight, Loader2, Camera, UserCircle, X,
-  ClipboardList
-} from 'lucide-react'
-
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
 const statusStyle = {
   Confirmed: 'bg-green-100 text-green-700',
   Pending:   'bg-yellow-100 text-yellow-700',
@@ -105,7 +94,6 @@ const AppointmentPanel = ({ title, appointments, onClose }) => (
 )
 
 const quickActions = [
-<<<<<<< HEAD
   { icon: Search,       label: 'Find Doctors',      color: 'bg-blue-50 text-blue-600'    },
   { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600'  },
   { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 text-purple-600'},
@@ -114,16 +102,6 @@ const quickActions = [
   { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 text-teal-600'    },
   { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 text-yellow-600'},
   { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600'   },
-=======
-  { icon: Search,       label: 'Find Doctors',      color: 'bg-blue-50 text-blue-600',    path: '/find-doctors'           },
-  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600',  path: '/book-appointment'       },
-  { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 text-purple-600',path: '/patient-appointments'   },
-  { icon: FileText,     label: 'Upload Reports',    color: 'bg-orange-50 text-orange-600',path: null                      },
-  { icon: Pill,         label: 'My Prescriptions',  color: 'bg-pink-50 text-pink-600',    path: '/patient-prescriptions'  },
-  { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 text-teal-600',    path: null                      },
-  { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 text-yellow-600',path: null                      },
-  { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600',   path: '/patient-appointments'   },
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
 ]
 
 const HistoryModal = ({ user, onClose }) => {
@@ -496,7 +474,6 @@ const playAlarm = () => {
 const PatientDashboard = () => {
   const { user }    = useUser()
   const { signOut } = useClerk()
-<<<<<<< HEAD
   const navigate = useNavigate()
   const { data, loading, error, refetch } = usePatientDashboard()
   const [profileImage, setProfileImage] = useState(null)
@@ -539,25 +516,6 @@ const PatientDashboard = () => {
     const interval = setInterval(check, 60000)
     return () => clearInterval(interval)
   }, [reminders])
-=======
-  const { getToken } = useAuth()
-  const navigate    = useNavigate()
-  const { data, loading, error } = usePatientDashboard()
-  const [profileImage, setProfileImage] = useState(null)
-  const [uploading, setUploading]       = useState(false)
-  const [activePanel, setActivePanel]   = useState(null)
-  const fileInputRef = useRef(null)
-  useSyncUser()
-
-  const togglePanel = (key) => setActivePanel(prev => prev === key ? null : key)
-
-  const recent = data?.recentAppointments || []
-  const panelData = {
-    total:     { title: 'All Appointments',       appointments: recent },
-    completed: { title: 'Completed Appointments', appointments: recent.filter(a => a.status === 'Completed') },
-    pending:   { title: 'Pending Appointments',   appointments: recent.filter(a => a.status === 'Pending') },
-  }
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0]
@@ -579,7 +537,6 @@ const PatientDashboard = () => {
     reader.readAsDataURL(file)
   }
 
-<<<<<<< HEAD
   const handleQuickAction = async (label) => {
     if (label === 'Find Doctors') navigate('/find-doctors')
     if (label === 'Book Appointment') setShowBooking(true)
@@ -598,9 +555,6 @@ const PatientDashboard = () => {
   }
 
   const avatarSrc = profileImage || user?.imageUrl
-=======
-  const avatarSrc = profileImage || data?.patient?.profileImage || user?.imageUrl
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -612,11 +566,7 @@ const PatientDashboard = () => {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">Patient</span>
-<<<<<<< HEAD
-=======
 
-          {/* Profile Picture */}
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
           <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
             {avatarSrc
               ? <img src={avatarSrc} alt="profile" className="w-9 h-9 rounded-full object-cover border-2 border-blue-200" />
@@ -650,24 +600,14 @@ const PatientDashboard = () => {
           </p>
         </div>
 
-<<<<<<< HEAD
-=======
-        {/* Symptom Checker */}
-        <SymptomChecker />
 
-        {/* Quick Actions */}
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
         <section>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {quickActions.map(({ icon: Icon, label, color, path }) => (
               <button
                 key={label}
-<<<<<<< HEAD
                 onClick={() => handleQuickAction(label)}
-=======
-                onClick={() => path && navigate(path)}
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
                 className="flex flex-col items-center gap-3 p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
               >
                 <div className={`p-3 rounded-full ${color}`}><Icon size={22} strokeWidth={1.5} /></div>
@@ -690,92 +630,25 @@ const PatientDashboard = () => {
               <Loader2 size={18} className="animate-spin" /> Loading...
             </div>
           ) : (
-<<<<<<< HEAD
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={CalendarDays} label="Total Appointments"  value={data?.stats.total}     color="bg-blue-50 text-blue-600"    />
-              <StatCard icon={CheckCircle}  label="Completed"           value={data?.stats.completed} color="bg-green-50 text-green-600"  />
-              <StatCard icon={Clock}        label="Pending"             value={data?.stats.pending}   color="bg-yellow-50 text-yellow-600"/>
-              <StatCard icon={CalendarPlus} label="Upcoming"            value={data?.stats.upcoming}  color="bg-purple-50 text-purple-600"/>
-=======
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              <StatCard
-                icon={CalendarDays} label="Total Appointments" value={data?.stats?.total}
-                color="bg-blue-50 text-blue-600"
-                active={activePanel === 'total'}
-                onClick={() => togglePanel('total')}
-              />
-              <StatCard
-                icon={CheckCircle} label="Completed" value={data?.stats?.completed}
-                color="bg-green-50 text-green-600"
-                active={activePanel === 'completed'}
-                onClick={() => togglePanel('completed')}
-              />
-              <StatCard
-                icon={Clock} label="Pending" value={data?.stats?.pending}
-                color="bg-yellow-50 text-yellow-600"
-                active={activePanel === 'pending'}
-                onClick={() => togglePanel('pending')}
-              />
-
-              {/* Inline detail panel */}
-              {activePanel && (
-                <AppointmentPanel
-                  title={panelData[activePanel].title}
-                  appointments={panelData[activePanel].appointments}
-                  onClose={() => setActivePanel(null)}
-                />
-              )}
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
+              <StatCard icon={CalendarDays} label="Total Appointments"  value={data?.stats?.total}     color="bg-blue-50 text-blue-600"    />
+              <StatCard icon={CheckCircle}  label="Completed"           value={data?.stats?.completed} color="bg-green-50 text-green-600"  />
+              <StatCard icon={Clock}        label="Pending"             value={data?.stats?.pending}   color="bg-yellow-50 text-yellow-600"/>
+              <StatCard icon={CalendarPlus} label="Upcoming"            value={data?.stats?.upcoming}  color="bg-purple-50 text-purple-600"/>
             </div>
           )}
         </section>
 
-<<<<<<< HEAD
-=======
-        {/* Medical History */}
-        {!loading && data?.patient?.medicalHistory?.length > 0 && (
-          <section>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ClipboardList size={16} className="text-blue-600" />
-                  Medical History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {data.patient.medicalHistory.map((item, i) => (
-                  <div key={i} className="flex items-start justify-between py-3 border-b last:border-0">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{item.condition}</p>
-                      {item.notes && <p className="text-xs text-gray-400 mt-0.5">{item.notes}</p>}
-                    </div>
-                    {item.diagnosedOn && (
-                      <span className="text-xs text-gray-400 shrink-0 ml-4">
-                        {new Date(item.diagnosedOn).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </section>
-        )}
 
-        {/* Recent Appointments */}
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
         {!loading && (
           <section>
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Recent Appointments</CardTitle>
-<<<<<<< HEAD
                   <button
                     onClick={() => setShowHistory(true)}
                     className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
-=======
-                  <button onClick={() => navigate('/patient-appointments')} className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
->>>>>>> f9f47615798d77828d9172e291dcd01c387ba1e4
                     View all <ChevronRight size={14} />
                   </button>
                 </div>
