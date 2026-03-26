@@ -17,6 +17,13 @@ const TIMES = ['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM'
 
 const defaultForm = { doctorId: '', date: '', time: '', reason: '', symptoms: '', consultationType: 'in-person' }
 
+const statusStyle = {
+  Confirmed: 'bg-green-100 text-green-700',
+  Pending:   'bg-yellow-100 text-yellow-700',
+  Cancelled: 'bg-red-100 text-red-700',
+  Completed: 'bg-blue-100 text-blue-700',
+}
+
 const StatCard = ({ icon: Icon, label, value, color }) => (
   <Card>
     <CardContent className="flex items-center gap-4 pt-6">
@@ -29,68 +36,6 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
       </div>
     </CardContent>
   </Card>
-)
-
-const statusStyle = {
-  Confirmed: 'bg-green-100 text-green-700',
-  Pending:   'bg-yellow-100 text-yellow-700',
-  Cancelled: 'bg-red-100 text-red-700',
-  Completed: 'bg-blue-100 text-blue-700',
-}
-
-const StatCard = ({ icon: Icon, label, value, color, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`w-full text-left rounded-2xl border transition-all ${
-      active
-        ? 'border-blue-400 shadow-md ring-2 ring-blue-100'
-        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
-    } bg-white`}
-  >
-    <div className="flex items-center gap-4 p-5">
-      <div className={`p-3 rounded-full ${color}`}>
-        <Icon size={22} strokeWidth={1.5} />
-      </div>
-      <div className="flex-1">
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-gray-900">{value ?? '—'}</p>
-      </div>
-      <ChevronRight size={16} className={`text-gray-300 transition-transform ${active ? 'rotate-90 text-blue-400' : ''}`} />
-    </div>
-  </button>
-)
-
-const AppointmentPanel = ({ title, appointments, onClose }) => (
-  <div className="col-span-2 lg:col-span-3 bg-blue-50 border border-blue-100 rounded-2xl p-4">
-    <div className="flex items-center justify-between mb-3">
-      <p className="text-sm font-semibold text-blue-700">{title}</p>
-      <button onClick={onClose} className="text-blue-400 hover:text-blue-600">
-        <X size={15} />
-      </button>
-    </div>
-    {appointments.length === 0 ? (
-      <p className="text-sm text-gray-400 py-2">No appointments in this category.</p>
-    ) : (
-      <div className="flex flex-col gap-2">
-        {appointments.map(appt => (
-          <div key={appt._id} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-blue-100">
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                Dr. {appt.doctor?.firstName} {appt.doctor?.lastName}
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {appt.doctor?.specialty && <span className="mr-2">{appt.doctor.specialty}</span>}
-                {new Date(appt.date).toLocaleDateString()} — {appt.time}
-              </p>
-            </div>
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusStyle[appt.status]}`}>
-              {appt.status}
-            </span>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
 )
 
 const quickActions = [
@@ -654,10 +599,10 @@ const PatientDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {recent.length === 0 && (
+                {data?.recentAppointments?.length === 0 && (
                   <p className="text-sm text-gray-400 py-2">No appointments yet.</p>
                 )}
-                {recent.map(appt => (
+                {data?.recentAppointments?.map(appt => (
                   <div key={appt._id} className="flex items-center justify-between py-3 border-b last:border-0">
                     <div>
                       <p className="text-sm font-medium text-gray-900">
