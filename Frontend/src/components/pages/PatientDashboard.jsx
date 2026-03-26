@@ -1,30 +1,18 @@
 import { useUser, useClerk } from '@clerk/clerk-react'
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { usePatientDashboard } from '@/hooks/usePatientDashboard'
 import { useSyncUser } from '@/hooks/useSyncUser'
 import { apiFetch } from '@/lib/api'
 import { useAuth } from '@clerk/clerk-react'
+import SymptomChecker from '@/components/SymptomChecker'
 import {
   HeartPulse, Search, CalendarPlus, Video, FileText,
   Pill, Truck, Bell, History, CalendarDays, CheckCircle,
-  Clock, ChevronRight, Loader2, Camera, UserCircle
+  Clock, ChevronRight, Loader2, Camera, UserCircle, X
 } from 'lucide-react'
-
-const StatCard = ({ icon: Icon, label, value, color }) => (
-  <Card>
-    <CardContent className="flex items-center gap-4 pt-6">
-      <div className={`p-3 rounded-full ${color}`}>
-        <Icon size={22} strokeWidth={1.5} />
-      </div>
-      <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-gray-900">{value ?? '—'}</p>
-      </div>
-    </CardContent>
-  </Card>
-)
 
 const statusStyle = {
   Confirmed: 'bg-green-100 text-green-700',
@@ -33,26 +21,92 @@ const statusStyle = {
   Completed: 'bg-blue-100 text-blue-700',
 }
 
+const StatCard = ({ icon: Icon, label, value, color, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`w-full text-left rounded-2xl border transition-all ${
+      active
+        ? 'border-blue-400 shadow-md ring-2 ring-blue-100'
+        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+    } bg-white`}
+  >
+    <div className="flex items-center gap-4 p-5">
+      <div className={`p-3 rounded-full ${color}`}>
+        <Icon size={22} strokeWidth={1.5} />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-2xl font-bold text-gray-900">{value ?? '—'}</p>
+      </div>
+      <ChevronRight size={16} className={`text-gray-300 transition-transform ${active ? 'rotate-90 text-blue-400' : ''}`} />
+    </div>
+  </button>
+)
+
+const AppointmentPanel = ({ title, appointments, onClose }) => (
+  <div className="col-span-2 lg:col-span-3 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+    <div className="flex items-center justify-between mb-3">
+      <p className="text-sm font-semibold text-blue-700">{title}</p>
+      <button onClick={onClose} className="text-blue-400 hover:text-blue-600">
+        <X size={15} />
+      </button>
+    </div>
+    {appointments.length === 0 ? (
+      <p className="text-sm text-gray-400 py-2">No appointments in this category.</p>
+    ) : (
+      <div className="flex flex-col gap-2">
+        {appointments.map(appt => (
+          <div key={appt._id} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-blue-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                Dr. {appt.doctor.firstName} {appt.doctor.lastName}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {appt.doctor.specialty && <span className="mr-2">{appt.doctor.specialty}</span>}
+                {new Date(appt.date).toLocaleDateString()} — {appt.time}
+              </p>
+            </div>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusStyle[appt.status]}`}>
+              {appt.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)
+
 const quickActions = [
-  { icon: Search,      label: 'Find Doctors',       color: 'bg-blue-50 text-blue-600'    },
-  { icon: CalendarPlus,label: 'Book Appointment',   color: 'bg-green-50 text-green-600'  },
-  { icon: Video,       label: 'Join Consultation',  color: 'bg-purple-50 text-purple-600'},
-  { icon: FileText,    label: 'Upload Reports',     color: 'bg-orange-50 text-orange-600'},
-  { icon: Pill,        label: 'My Prescriptions',   color: 'bg-pink-50 text-pink-600'    },
-  { icon: Truck,       label: 'Order Medicines',    color: 'bg-teal-50 text-teal-600'    },
-  { icon: Bell,        label: 'Reminders',          color: 'bg-yellow-50 text-yellow-600'},
-  { icon: History,     label: 'History',            color: 'bg-gray-100 text-gray-600'   },
+  { icon: Search,       label: 'Find Doctors',      color: 'bg-blue-50 text-blue-600'    },
+  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600'  },
+  { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 text-purple-600'},
+  { icon: FileText,     label: 'Upload Reports',    color: 'bg-orange-50 text-orange-600'},
+  { icon: Pill,         label: 'My Prescriptions',  color: 'bg-pink-50 text-pink-600'    },
+  { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 text-teal-600'    },
+  { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 text-yellow-600'},
+  { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600'   },
 ]
 
 const PatientDashboard = () => {
   const { user } = useUser()
   const { signOut } = useClerk()
   const { getToken } = useAuth()
+  const navigate = useNavigate()
   const { data, loading, error } = usePatientDashboard()
   const [profileImage, setProfileImage] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [activePanel, setActivePanel] = useState(null)
   const fileInputRef = useRef(null)
   useSyncUser()
+
+  const togglePanel = (key) => setActivePanel(prev => prev === key ? null : key)
+
+  const recent = data?.recentAppointments || []
+  const panelData = {
+    total:     { title: 'All Appointments',       appointments: recent },
+    completed: { title: 'Completed Appointments', appointments: recent.filter(a => a.status === 'Completed') },
+    pending:   { title: 'Pending Appointments',   appointments: recent.filter(a => a.status === 'Pending') },
+  }
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0]
@@ -74,7 +128,7 @@ const PatientDashboard = () => {
     reader.readAsDataURL(file)
   }
 
-  const avatarSrc = profileImage || user?.imageUrl
+  const avatarSrc = profileImage || data?.patient?.profileImage || user?.imageUrl
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -114,10 +168,18 @@ const PatientDashboard = () => {
         {/* Welcome */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome, <span className="text-blue-600">{user?.firstName}!</span>
+            Welcome, <span className="text-blue-600">{data?.patient?.firstName || user?.firstName}!</span>
           </h1>
-          <p className="text-gray-500 mt-1">How are you feeling today?</p>
+          <p className="text-gray-500 mt-1">
+            {data?.patient?.email && (
+              <span className="text-xs text-gray-400 mr-3">{data.patient.email}</span>
+            )}
+            How are you feeling today?
+          </p>
         </div>
+
+        {/* Symptom Checker */}
+        <SymptomChecker />
 
         {/* Quick Actions */}
         <section>
@@ -126,6 +188,7 @@ const PatientDashboard = () => {
             {quickActions.map(({ icon: Icon, label, color }) => (
               <button
                 key={label}
+                onClick={() => label === 'Find Doctors' && navigate('/find-doctors')}
                 className="flex flex-col items-center gap-3 p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
               >
                 <div className={`p-3 rounded-full ${color}`}><Icon size={22} strokeWidth={1.5} /></div>
@@ -150,14 +213,62 @@ const PatientDashboard = () => {
               <Loader2 size={18} className="animate-spin" /> Loading...
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={CalendarDays} label="Total Appointments"    value={data?.stats.total}     color="bg-blue-50 text-blue-600"    />
-              <StatCard icon={CheckCircle}  label="Completed"             value={data?.stats.completed} color="bg-green-50 text-green-600"  />
-              <StatCard icon={Clock}        label="Pending"               value={data?.stats.pending}   color="bg-yellow-50 text-yellow-600"/>
-              <StatCard icon={CalendarPlus} label="Upcoming"              value={data?.stats.upcoming}  color="bg-purple-50 text-purple-600"/>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <StatCard
+                icon={CalendarDays} label="Total Appointments" value={data?.stats.total}
+                color="bg-blue-50 text-blue-600"
+                active={activePanel === 'total'}
+                onClick={() => togglePanel('total')}
+              />
+              <StatCard
+                icon={CheckCircle} label="Completed" value={data?.stats.completed}
+                color="bg-green-50 text-green-600"
+                active={activePanel === 'completed'}
+                onClick={() => togglePanel('completed')}
+              />
+              <StatCard
+                icon={Clock} label="Pending" value={data?.stats.pending}
+                color="bg-yellow-50 text-yellow-600"
+                active={activePanel === 'pending'}
+                onClick={() => togglePanel('pending')}
+              />
+              {/* Inline detail panel */}
+              {activePanel && (
+                <AppointmentPanel
+                  title={panelData[activePanel].title}
+                  appointments={panelData[activePanel].appointments}
+                  onClose={() => setActivePanel(null)}
+                />
+              )}
             </div>
           )}
         </section>
+
+        {/* Medical History */}
+        {!loading && data?.patient?.medicalHistory?.length > 0 && (
+          <section>
+            <Card>
+              <CardHeader>
+                <CardTitle>Medical History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {data.patient.medicalHistory.map((item, i) => (
+                  <div key={i} className="flex items-start justify-between py-3 border-b last:border-0">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{item.condition}</p>
+                      {item.notes && <p className="text-xs text-gray-400 mt-0.5">{item.notes}</p>}
+                    </div>
+                    {item.diagnosedOn && (
+                      <span className="text-xs text-gray-400 shrink-0 ml-4">
+                        {new Date(item.diagnosedOn).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         {/* Recent Appointments */}
         {!loading && (
@@ -166,7 +277,7 @@ const PatientDashboard = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Recent Appointments</CardTitle>
-                  <button className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
+                  <button onClick={() => navigate('/patient-appointments')} className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
                     View all <ChevronRight size={14} />
                   </button>
                 </div>

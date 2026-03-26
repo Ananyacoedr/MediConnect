@@ -1,26 +1,35 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '@clerk/clerk-react'
+import { useAuth, useUser } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 
 export const usePatientDashboard = () => {
-  const { getToken } = useAuth()
+  const { getToken, userId } = useAuth()
+  const { user, isLoaded }   = useUser()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
-  const fetch = useCallback(async () => {
+  const refetch = useCallback(async () => {
+    if (!userId || !isLoaded) return
     try {
       setLoading(true)
-      const result = await apiFetch('/patients/dashboard', getToken)
+      setError(null)
+      // Build query params so backend can auto-create if first visit
+      const params = new URLSearchParams({
+        firstName: user?.firstName || '',
+        lastName:  user?.lastName  || '',
+        email:     user?.primaryEmailAddress?.emailAddress || '',
+      })
+      const result = await apiFetch(`/patients/${userId}?${params}`, getToken)
       setData(result)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [getToken])
+  }, [userId, isLoaded, getToken, user])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { refetch() }, [refetch])
 
-  return { data, loading, error, refetch: fetch }
+  return { data, loading, error, refetch }
 }
