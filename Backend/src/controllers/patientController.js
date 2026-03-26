@@ -16,7 +16,7 @@ const syncPatient = async (req, res) => {
   }
 }
 
-const getProfile = async (req, res) => {
+const getMe = async (req, res) => {
   try {
     const patient = await Patient.findOne({ clerkId: req.auth.userId })
     if (!patient) return res.status(404).json({ error: 'Patient not found' })
@@ -84,12 +84,34 @@ const getDashboard = async (req, res) => {
   }
 }
 
-const getAllAppointments = async (req, res) => {
+const bookAppointment = async (req, res) => {
+  try {
+    const { doctorId, date, time, reason, symptoms, consultationType } = req.body
+    const patient = await Patient.findOne({ clerkId: req.auth.userId })
+    if (!patient) return res.status(404).json({ error: 'Patient not found' })
+    const appointment = await Appointment.create({
+      doctor: doctorId,
+      patient: patient._id,
+      date: new Date(date),
+      time,
+      reason: reason || '',
+      symptoms: symptoms || '',
+      consultationType: consultationType || 'in-person',
+      status: 'Pending',
+    })
+    const populated = await appointment.populate('doctor', 'firstName lastName specialty')
+    res.status(201).json(populated)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
+const getMyAppointments = async (req, res) => {
   try {
     const patient = await Patient.findOne({ clerkId: req.auth.userId })
     if (!patient) return res.status(404).json({ error: 'Patient not found' })
     const appointments = await Appointment.find({ patient: patient._id })
-      .populate('doctor', 'firstName lastName specialty profileImage')
+      .populate('doctor', 'firstName lastName specialty profileImage location title')
       .sort({ date: -1 })
     res.json(appointments)
   } catch (err) {
@@ -97,100 +119,22 @@ const getAllAppointments = async (req, res) => {
   }
 }
 
-const bookAppointment = async (req, res) => {
+const getReminders = async (req, res) => {
   try {
     const patient = await Patient.findOne({ clerkId: req.auth.userId })
     if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    const { doctorId, date, time, reason, consultationType, symptoms, medicalHistory } = req.body
-    const doctor = await Doctor.findById(doctorId)
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
-    const appointment = await Appointment.create({
-      doctor: doctorId,
+    const now = new Date()
+    const reminders = await Appointment.find({
       patient: patient._id,
-      date, time, reason, consultationType: consultationType || 'video',
-      symptoms: symptoms || '', medicalHistory: medicalHistory || '',
-      patientAge: patient.dob ? Math.floor((new Date() - new Date(patient.dob)) / (365.25 * 24 * 60 * 60 * 1000)) : undefined,
-      patientGender: patient.gender,
+      status: { $in: ['Pending', 'Confirmed'] },
+      date: { $gte: now },
     })
-    await appointment.populate('doctor', 'firstName lastName specialty')
-    res.status(201).json(appointment)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-}
-
-const getPrescriptions = async (req, res) => {
-  try {
-    const patient = await Patient.findOne({ clerkId: req.auth.userId })
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    const appointments = await Appointment.find({
-      patient: patient._id,
-      prescription: { $exists: true, $not: { $size: 0 } },
-    })
-      .populate('doctor', 'firstName lastName specialty')
-      .sort({ date: -1 })
-    res.json(appointments)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-}
-
-const getByClerkId = async (req, res) => {
-  try {
-    // Security: only allow access to own record
-    if (req.params.clerkId !== req.auth.userId)
-      return res.status(403).json({ error: 'Forbidden' })
-
-    let patient = await Patient.findOne({ clerkId: req.params.clerkId })
-      .populate({
-        path: 'appointments',
-        populate: { path: 'doctor', select: 'firstName lastName specialty profileImage title' },
-        options: { sort: { date: -1 } },
-      })
-
-    // Auto-create if first time (Clerk data passed in query)
-    if (!patient) {
-      const { firstName, lastName, email } = req.query
-      if (!firstName || !email) return res.status(404).json({ error: 'Patient not found' })
-      patient = await Patient.create({
-        clerkId: req.params.clerkId,
-        firstName, lastName: lastName || '', email,
-      })
-    }
-
-    // Attach live appointment stats
-    const allAppts = await Appointment.find({ patient: patient._id })
-    const stats = {
-      total:     allAppts.length,
-      completed: allAppts.filter(a => a.status === 'Completed').length,
-      pending:   allAppts.filter(a => a.status === 'Pending').length,
-      confirmed: allAppts.filter(a => a.status === 'Confirmed').length,
-    }
-
-    const recentAppointments = await Appointment.find({ patient: patient._id })
       .populate('doctor', 'firstName lastName specialty profileImage title')
-      .sort({ date: -1 })
-      .limit(5)
-
-    res.json({ patient, stats, recentAppointments })
+      .sort({ date: 1 })
+    res.json(reminders)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 }
 
-const getDoctors = async (req, res) => {
-  try {
-    const { specialty } = req.query
-    const filter = specialty ? { specialty: { $regex: specialty, $options: 'i' } } : {}
-    const doctors = await Doctor.find(filter, '-availability -__v').sort({ createdAt: -1 })
-    res.json(doctors)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-}
-
-module.exports = {
-  syncPatient, getProfile, updateProfile, updateProfileImage,
-  getDashboard, getAllAppointments, bookAppointment, getPrescriptions, getDoctors,
-  getByClerkId,
-}
+module.exports = { syncPatient, getMe, getDashboard, updateProfileImage, bookAppointment, getMyAppointments, getReminders }
