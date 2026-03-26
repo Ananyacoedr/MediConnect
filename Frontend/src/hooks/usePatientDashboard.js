@@ -1,26 +1,28 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '@clerk/clerk-react'
+import { useUser } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 
 export const usePatientDashboard = () => {
-  const { getToken } = useAuth()
+  const { user, isLoaded } = useUser()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
-  const fetch = useCallback(async () => {
+  const load = useCallback(async () => {
+    if (!isLoaded || !user) return
     try {
       setLoading(true)
-      const result = await apiFetch('/patients/dashboard', getToken)
+      setError(null)
+      const result = await apiFetch('/patients/dashboard', user.id)
       setData(result)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [getToken])
+  }, [user, isLoaded])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { load() }, [load])
 
-  return { data, loading, error, refetch: fetch }
+  return { data, loading, error, refetch: load }
 }

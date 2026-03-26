@@ -25,6 +25,18 @@ const patients = [
   { clerkId: 'patient_seed_8', firstName: 'Carlos',  lastName: 'Mendez',  email: 'carlos.mendez@email.com',  phone: '555-0108', gender: 'Male',   dob: new Date('1988-12-02') },
 ]
 
+const extraDoctors = [
+  { clerkId: 'doctor_seed_1', firstName: 'Priya',  lastName: 'Sharma',  title: 'Dr.', designation: 'Consultant',         email: 'priya.sharma@mediconnect.com',   specialty: 'Cardiologist',       experience: 12, location: 'Mumbai, India',   phone: '555-0201', bio: 'Specialist in heart diseases and cardiac rehabilitation.' },
+  { clerkId: 'doctor_seed_2', firstName: 'James',  lastName: 'Carter',  title: 'Dr.', designation: 'Senior Consultant',   email: 'james.carter@mediconnect.com',   specialty: 'Neurologist',        experience: 15, location: 'London, UK',      phone: '555-0202', bio: 'Expert in neurological disorders including epilepsy and stroke.' },
+  { clerkId: 'doctor_seed_3', firstName: 'Aisha',  lastName: 'Khan',    title: 'Dr.', designation: 'Consultant',         email: 'aisha.khan@mediconnect.com',     specialty: 'Dermatologist',      experience: 8,  location: 'Dubai, UAE',      phone: '555-0203', bio: 'Specializes in skin, hair and nail conditions.' },
+  { clerkId: 'doctor_seed_4', firstName: 'Carlos', lastName: 'Rivera',  title: 'Dr.', designation: 'Associate Professor', email: 'carlos.rivera@mediconnect.com',  specialty: 'Orthopedic Surgeon', experience: 18, location: 'Miami, USA',      phone: '555-0204', bio: 'Bone and joint specialist with expertise in sports injuries.' },
+  { clerkId: 'doctor_seed_5', firstName: 'Emily',  lastName: 'Chen',    title: 'Dr.', designation: 'Consultant',         email: 'emily.chen@mediconnect.com',     specialty: 'Pediatrician',       experience: 9,  location: 'Toronto, Canada', phone: '555-0205', bio: 'Dedicated to child health from newborns to adolescents.' },
+  { clerkId: 'doctor_seed_6', firstName: 'Omar',   lastName: 'Hassan',  title: 'Dr.', designation: 'Senior Consultant',   email: 'omar.hassan@mediconnect.com',    specialty: 'Psychiatrist',       experience: 11, location: 'Cairo, Egypt',    phone: '555-0206', bio: 'Mental health specialist focusing on anxiety and depression.' },
+  { clerkId: 'doctor_seed_7', firstName: 'Sofia',  lastName: 'Rossi',   title: 'Dr.', designation: 'Consultant',         email: 'sofia.rossi@mediconnect.com',    specialty: 'Gynecologist',       experience: 14, location: 'Rome, Italy',     phone: '555-0207', bio: 'Women health specialist with focus on reproductive medicine.' },
+  { clerkId: 'doctor_seed_8', firstName: 'Raj',    lastName: 'Patel',   title: 'Dr.', designation: 'Consultant',         email: 'raj.patel@mediconnect.com',      specialty: 'Endocrinologist',    experience: 10, location: 'Chicago, USA',    phone: '555-0208', bio: 'Diabetes and thyroid disorder specialist.' },
+  { clerkId: 'doctor_seed_9', firstName: 'Yuki',   lastName: 'Tanaka',  title: 'Dr.', designation: 'Senior Consultant',   email: 'yuki.tanaka@mediconnect.com',    specialty: 'Ophthalmologist',    experience: 13, location: 'Tokyo, Japan',    phone: '555-0209', bio: 'Eye care specialist with expertise in cataract and LASIK surgery.' },
+]
+
 async function seed() {
   await mongoose.connect(process.env.MONGODB_URI)
   console.log('MongoDB connected')
@@ -32,6 +44,7 @@ async function seed() {
   await Appointment.deleteMany({})
   await Patient.deleteMany({ clerkId: { $regex: /^patient_seed_/ } })
   await Doctor.deleteMany({ clerkId: DOCTOR_CLERK_ID })
+  await Doctor.deleteMany({ clerkId: { $regex: /^doctor_seed_/ } })
 
   const doctor = await Doctor.create({
     clerkId:     DOCTOR_CLERK_ID,
@@ -56,6 +69,9 @@ async function seed() {
     ],
   })
   console.log('✔ Doctor created:', doctor.firstName, doctor.lastName)
+
+  await Doctor.insertMany(extraDoctors)
+  console.log(`✔ ${extraDoctors.length} extra doctors created`)
 
   const p = await Patient.insertMany(patients)
   console.log(`✔ ${p.length} patients created`)

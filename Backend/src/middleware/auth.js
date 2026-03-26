@@ -1,42 +1,19 @@
-const { verifyToken, createClerkClient } = require('@clerk/backend')
+const { createClerkClient } = require('@clerk/backend')
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
 
 const requireAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' })
-    }
+    const userId = req.headers['x-clerk-user-id']
+    if (!userId) return res.status(401).json({ error: 'No user id provided' })
 
-    const token = authHeader.split(' ')[1]
+    const user = await clerkClient.users.getUser(userId)
+    if (!user?.id) return res.status(401).json({ error: 'Invalid user' })
 
-    // Try verifyToken first (works for JWT templates)
-    try {
-      const payload = await verifyToken(token, {
-        secretKey: process.env.CLERK_SECRET_KEY,
-      })
-      req.auth = { userId: payload.sub }
-      return next()
-    } catch (jwtErr) {
-      console.log('JWT verify failed, trying session token...', jwtErr.message)
-    }
-
-    // Fallback: treat as session token and verify via Clerk API
-    try {
-      const { userId } = await clerkClient.authenticateRequest(req, {
-        secretKey: process.env.CLERK_SECRET_KEY,
-      })
-      if (!userId) return res.status(401).json({ error: 'Invalid session' })
-      req.auth = { userId }
-      return next()
-    } catch (sessionErr) {
-      console.log('Session verify failed:', sessionErr.message)
-    }
-
-    return res.status(401).json({ error: 'Invalid token' })
+    req.auth = { userId: user.id }
+    return next()
   } catch (err) {
-    console.error('Auth middleware error:', err)
+    console.error('Auth error:', err.message)
     return res.status(401).json({ error: 'Auth failed' })
   }
 }

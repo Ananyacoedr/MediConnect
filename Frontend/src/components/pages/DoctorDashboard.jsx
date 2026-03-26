@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser, useClerk } from '@clerk/clerk-react'
-import { useAuth } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -11,7 +10,7 @@ import { useAvailability } from '@/hooks/useAvailability'
 import ThemeToggle from '@/components/ThemeToggle'
 import {
   HeartPulse, CalendarDays, Users, BookCheck, Clock,
-  ChevronRight, Loader2, Briefcase, MapPin,
+  ChevronRight, Loader2,
   LayoutDashboard, UserCircle, CalendarCheck, LogOut,
   Video, Mic, PhoneOff, CheckCircle2, CalendarClock,
   DollarSign, ClipboardList, Stethoscope, History
@@ -149,18 +148,17 @@ const ConsultationsSection = ({ appointments, navigate }) => {
 }
 
 // ── Previous Consultations Section ───────────────────────────────────────
-const PreviousConsultationsSection = () => {
-  const { getToken } = useAuth()
+const PreviousConsultationsSection = ({ user }) => {
   const navigate = useNavigate()
   const [consultations, setConsultations] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetch('/consultations/previous', getToken)
+    apiFetch('/consultations/previous', user?.id)
       .then(setConsultations)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [])
+  }, [user?.id])
 
   return (
     <div className="space-y-4">
@@ -301,6 +299,211 @@ const AvailabilitySection = ({ initialAvailability }) => {
           <Button onClick={save} disabled={saving} className="w-full mt-2">
             {saving ? <><Loader2 size={15} className="animate-spin" /> Saving...</> : 'Save Availability'}
           </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ── Appointments Section ──────────────────────────────────────────────────
+const FILTERS = ['All', 'Pending', 'Confirmed', 'Cancelled', 'Completed']
+
+const AppointmentsSection = ({ user, updateAppointmentStatus, navigate }) => {
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('All')
+  const [expanded, setExpanded] = useState(null)
+  const [updating, setUpdating] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await apiFetch('/doctors/appointments', user.id)
+      setAppointments(data)
+    } catch {}
+    finally { setLoading(false) }
+  }, [user.id])
+
+  useEffect(() => { load() }, [load])
+
+  const handleStatus = async (id, status) => {
+    setUpdating(id)
+    await updateAppointmentStatus(id, status)
+    await load()
+    setUpdating(null)
+  }
+
+  const filtered = filter === 'All' ? appointments : appointments.filter(a => a.status === filter)
+
+  const counts = FILTERS.reduce((acc, f) => {
+    acc[f] = f === 'All' ? appointments.length : appointments.filter(a => a.status === f).length
+    return acc
+  }, {})
+
+  return (
+    <div className="space-y-4">
+      <SectionTitle>View Appointments</SectionTitle>
+
+      {/* Filter tabs */}
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              filter === f
+                ? 'bg-blue-600 text-white'
+                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400'
+            }`}
+          >
+            {f} <span className="ml-1 opacity-70">({counts[f]})</span>
+          </button>
+        ))}
+      </div>
+
+      <Card>
+        <CardContent className="pt-4">
+          {loading ? (
+            <div className="flex items-center gap-2 text-gray-400 py-8 justify-center">
+              <Loader2 size={16} className="animate-spin" /> Loading appointments...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center py-10 text-gray-400 gap-2">
+              <CalendarDays size={36} strokeWidth={1} />
+              <p className="text-sm">No {filter !== 'All' ? filter.toLowerCase() : ''} appointments found.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {filtered.map(appt => {
+                const isOpen = expanded === appt._id
+                const age = appt.patient?.dob
+                  ? Math.floor((new Date() - new Date(appt.patient.dob)) / (365.25 * 24 * 60 * 60 * 1000))
+                  : null
+                return (
+                  <div key={appt._id} className="py-4">
+                    {/* Row */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {appt.patient?.profileImage
+                          ? <img src={appt.patient.profileImage} className="w-10 h-10 rounded-full object-cover border shrink-0" alt="patient" />
+                          : <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 text-sm font-bold shrink-0">
+                              {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
+                            </div>
+                        }
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {appt.patient?.firstName} {appt.patient?.lastName}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <span className="flex items-center gap-1 text-xs text-gray-400">
+                              <CalendarDays size={11} />
+                              {new Date(appt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs text-gray-400">
+                              <Clock size={11} /> {appt.time}
+                            </span>
+                            <span className="text-xs text-gray-400 capitalize">· {appt.consultationType}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
+                        <button
+                          onClick={() => setExpanded(isOpen ? null : appt._id)}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          {isOpen ? 'Hide' : 'Details'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded details */}
+                    {isOpen && (
+                      <div className="mt-4 ml-13 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {[
+                            { label: 'Email',  value: appt.patient?.email || '—' },
+                            { label: 'Phone',  value: appt.patient?.phone || '—' },
+                            { label: 'Gender', value: appt.patient?.gender || '—' },
+                            { label: 'Age',    value: age ? `${age} yrs` : '—' },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="bg-white dark:bg-gray-700 rounded-lg px-3 py-2">
+                              <p className="text-xs text-gray-400">{label}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{value}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {appt.reason && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Reason for Visit</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">{appt.reason}</p>
+                          </div>
+                        )}
+                        {appt.symptoms && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Symptoms</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">{appt.symptoms}</p>
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        {appt.status === 'Pending' && (
+                          <div className="flex gap-2 pt-1">
+                            <Button
+                              size="sm" className="h-8 px-4 text-xs"
+                              disabled={updating === appt._id}
+                              onClick={() => handleStatus(appt._id, 'Confirmed')}
+                            >
+                              {updating === appt._id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm" variant="outline" className="h-8 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                              disabled={updating === appt._id}
+                              onClick={() => handleStatus(appt._id, 'Cancelled')}
+                            >
+                              Decline
+                            </Button>
+                            <Button
+                              size="sm" variant="outline" className="h-8 px-4 text-xs ml-auto"
+                              onClick={() => navigate(`/consultation/${appt._id}`)}
+                            >
+                              Start Consultation
+                            </Button>
+                          </div>
+                        )}
+                        {appt.status === 'Confirmed' && (
+                          <div className="flex gap-2 pt-1">
+                            <Button
+                              size="sm" className="h-8 px-4 text-xs"
+                              onClick={() => navigate(`/consultation/${appt._id}`)}
+                            >
+                              Start Consultation
+                            </Button>
+                            <Button
+                              size="sm" variant="outline" className="h-8 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                              disabled={updating === appt._id}
+                              onClick={() => handleStatus(appt._id, 'Cancelled')}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                        {appt.status === 'Completed' && (
+                          <Button size="sm" variant="outline" className="h-8 px-4 text-xs mt-1"
+                            onClick={() => navigate(`/consultation/${appt._id}`)}
+                          >
+                            View Consultation Notes
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -580,42 +783,7 @@ const DoctorDashboard = () => {
 
           {/* VIEW APPOINTMENTS */}
           {active === 'appointments' && (
-            <div className="space-y-4">
-              <SectionTitle>View Appointments</SectionTitle>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Pending Booking Requests</CardTitle>
-                    <button className="text-xs text-blue-600 flex items-center gap-1 hover:underline">View all <ChevronRight size={14} /></button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={16} className="animate-spin" /> Loading...</div>
-                  ) : data?.pendingRequests?.length === 0 ? (
-                    <p className="text-sm text-gray-400 py-2">No pending requests.</p>
-                  ) : (
-                    data?.pendingRequests?.map(appt => (
-                      <div key={appt._id} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 text-xs font-bold">
-                            {appt.patient.firstName[0]}{appt.patient.lastName[0]}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient.firstName} {appt.patient.lastName}</p>
-                            <p className="text-xs text-gray-400">{new Date(appt.date).toLocaleDateString()} — {appt.time}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" className="h-7 px-3 text-xs" onClick={() => updateAppointmentStatus(appt._id, 'Confirmed')}>Accept</Button>
-                          <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => updateAppointmentStatus(appt._id, 'Cancelled')}>Decline</Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <AppointmentsSection user={user} updateAppointmentStatus={updateAppointmentStatus} navigate={navigate} />
           )}
 
           {/* CONSULTATIONS */}
@@ -624,7 +792,7 @@ const DoctorDashboard = () => {
           )}
 
           {/* PREVIOUS CONSULTATIONS */}
-          {active === 'previous' && <PreviousConsultationsSection />}
+          {active === 'previous' && <PreviousConsultationsSection user={user} />}
 
           {/* AVAILABILITY */}
           {active === 'availability' && (

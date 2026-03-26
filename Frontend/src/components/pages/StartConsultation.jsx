@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@clerk/clerk-react'
+import { useUser } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -14,31 +14,25 @@ const statusStyle = {
 
 const StartConsultation = () => {
   const navigate = useNavigate()
-  const { getToken } = useAuth()
+  const { user } = useUser()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
 
   useEffect(() => {
-    apiFetch('/doctors/dashboard', getToken)
+    apiFetch('/doctors/appointments', user?.id)
       .then(data => {
-        const all = [
-          ...(data.todayAppointments || []),
-          ...(data.pendingRequests || []),
-        ]
-        // deduplicate by _id
-        const seen = new Set()
-        setAppointments(all.filter(a => seen.has(a._id) ? false : seen.add(a._id)))
+        setAppointments(data.filter(a => ['Pending', 'Confirmed'].includes(a.status)))
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [])
+  }, [user?.id])
 
   const filtered = appointments.filter(a => {
-    const name = `${a.patient.firstName} ${a.patient.lastName}`.toLowerCase()
+    const name = `${a.patient?.firstName} ${a.patient?.lastName}`.toLowerCase()
     const matchSearch = name.includes(search.toLowerCase()) || (a.reason || '').toLowerCase().includes(search.toLowerCase())
-    const matchFilter = filter === 'all' || a.status === filter
+    const matchFilter = filter === 'all' || a.status.toLowerCase() === filter.toLowerCase()
     return matchSearch && matchFilter
   })
 
