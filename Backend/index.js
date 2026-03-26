@@ -22,6 +22,38 @@ app.use('/api/cart',          cartRoutes)
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }))
 
+// ── In-memory WebRTC Signaling ──────────────────────────────────────────────
+const rooms = {} // roomId -> { offer, answer, iceCandidates: [] }
+
+const getRoom = (id) => {
+  if (!rooms[id]) rooms[id] = { offer: null, answer: null, iceCandidates: [] }
+  return rooms[id]
+}
+
+// Push signal data
+app.post('/api/signal/:roomId', (req, res) => {
+  const room = getRoom(req.params.roomId)
+  const { type, data } = req.body
+  if (type === 'offer')         room.offer = data
+  else if (type === 'answer')   room.answer = data
+  else if (type === 'ice')      room.iceCandidates.push(data)
+  else if (type === 'end')      { delete rooms[req.params.roomId] }
+  res.json({ ok: true })
+})
+
+// Poll signal data
+app.get('/api/signal/:roomId', (req, res) => {
+  const room = getRoom(req.params.roomId)
+  const { since = 0, role } = req.query
+  // Return what the OTHER role needs
+  res.json({
+    offer:          role === 'patient' ? room.offer   : null,
+    answer:         role === 'doctor'  ? room.answer  : null,
+    iceCandidates:  room.iceCandidates.slice(Number(since)),
+    ended:          !rooms[req.params.roomId] && since > 0,
+  })
+})
+
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('MongoDB connected')

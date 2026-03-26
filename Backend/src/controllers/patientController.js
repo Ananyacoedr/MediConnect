@@ -8,7 +8,7 @@ const syncPatient = async (req, res) => {
     const patient = await Patient.findOneAndUpdate(
       { clerkId },
       { $set: { profileImage: profileImage || '' }, $setOnInsert: { clerkId, firstName, lastName, email } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     )
     res.json(patient)
   } catch (err) {
@@ -26,6 +26,21 @@ const getMe = async (req, res) => {
   }
 }
 
+const updateProfile = async (req, res) => {
+  try {
+    const allowed = ['firstName', 'lastName', 'phone', 'dob', 'gender', 'profileImage']
+    const update = {}
+    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k] })
+    const patient = await Patient.findOneAndUpdate(
+      { clerkId: req.auth.userId },
+      { $set: update },
+      { returnDocument: 'after' }
+    )
+    res.json(patient)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
 
 const updateProfileImage = async (req, res) => {
   try {
@@ -33,7 +48,7 @@ const updateProfileImage = async (req, res) => {
     const patient = await Patient.findOneAndUpdate(
       { clerkId: req.auth.userId },
       { $set: { profileImage } },
-      { new: true }
+      { returnDocument: 'after' }
     )
     res.json(patient)
   } catch (err) {

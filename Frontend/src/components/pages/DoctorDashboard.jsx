@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useUser, useClerk } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useDashboard } from '@/hooks/useDashboard'
@@ -12,7 +13,8 @@ import {
   HeartPulse, CalendarDays, Users, BookCheck, Clock,
   ChevronRight, Loader2,
   LayoutDashboard, UserCircle, CalendarCheck, LogOut,
-  Video, Mic, PhoneOff, CheckCircle2, CalendarClock,
+  Video, Phone, Mic, MessageSquare, PhoneOff, MicOff, VideoOff, Send,
+  CheckCircle2, CalendarClock,
   DollarSign, ClipboardList, Stethoscope, History
 } from 'lucide-react'
 const statusStyle = {
@@ -42,107 +44,281 @@ const inputCls = 'border border-gray-300 dark:border-gray-600 rounded-lg px-2 py
 
 // ── Consultations Section ──────────────────────────────────────────────────
 const ConsultationsSection = ({ appointments, navigate }) => {
-  const [activeCall, setActiveCall] = useState(null)
-  const confirmed = appointments?.filter(a => a.status === 'Confirmed') || []
+  const { getToken } = useAuth()
+  const [activeCall, setActiveCall] = useState(null) // 'video' | 'audio' | 'chat' | null
+  const [micMuted, setMicMuted]     = useState(false)
+  const [camOff, setCamOff]         = useState(false)
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatInput, setChatInput]   = useState('')
+  const [allConfirmed, setAllConfirmed] = useState([])
+  const [loadingAppts, setLoadingAppts] = useState(true)
+  const localVideoRef  = useRef(null)
+  const localStreamRef = useRef(null)
+  const chatEndRef     = useRef(null)
+
+  useEffect(() => {
+    apiFetch('/appointments/confirmed', getToken)
+      .then(data => setAllConfirmed(data))
+      .catch(() => setAllConfirmed(appointments?.filter(a => a.status === 'Confirmed') || []))
+      .finally(() => setLoadingAppts(false))
+  }, [getToken])
+
+  const confirmed = allConfirmed.length > 0 ? allConfirmed : (appointments?.filter(a => a.status === 'Confirmed') || [])
+
+  useEffect(() => {
+    if (!activeCall) return
+    let cancelled = false
+    navigator.mediaDevices.getUserMedia(
+      activeCall === 'video' ? { video: true, audio: true } : { audio: true, video: false }
+    ).then(stream => {
+      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return }
+      localStreamRef.current = stream
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream
+    }).catch(err => console.error('Media error:', err))
+    return () => { cancelled = true }
+  }, [activeCall])
+
+  useEffect(() => () => { localStreamRef.current?.getTracks().forEach(t => t.stop()) }, [])
+
+  const endCall = () => {
+    localStreamRef.current?.getTracks().forEach(t => t.stop())
+    localStreamRef.current = null
+    if (localVideoRef.current) localVideoRef.current.srcObject = null
+    setActiveCall(null)
+    setMicMuted(false)
+    setCamOff(false)
+    setChatMessages([])
+    setChatInput('')
+  }
+
+  const sendChat = () => {
+    if (!chatInput.trim()) return
+    setChatMessages(m => [...m, { text: chatInput.trim(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }])
+    setChatInput('')
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+  }
+
+  const toggleMic = () => {
+    localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = !t.enabled })
+    setMicMuted(m => !m)
+  }
+  const toggleCam = () => {
+    localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = !t.enabled })
+    setCamOff(c => !c)
+  }
 
   return (
     <div className="space-y-6">
       <SectionTitle>Consultations</SectionTitle>
 
-      {/* Call type cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="border-blue-200 dark:border-blue-700">
-          <CardContent className="flex items-center gap-4 pt-5 pb-5">
-            <div className="p-3 rounded-full bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
-              <Video size={22} strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-gray-100">Video Consultation</p>
-              <p className="text-xs text-gray-400 mt-0.5">Face-to-face virtual appointments</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-green-200 dark:border-green-700">
-          <CardContent className="flex items-center gap-4 pt-5 pb-5">
-            <div className="p-3 rounded-full bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-300">
-              <Mic size={22} strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-gray-100">Audio Consultation</p>
-              <p className="text-xs text-gray-400 mt-0.5">Voice-only appointments</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* ── Call Buttons ── */}
+      <Card>
+        <CardHeader><CardTitle>Start a Call</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <button
+              onClick={() => activeCall === 'video' ? endCall() : (endCall(), setTimeout(() => setActiveCall('video'), 50))}
+              className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-xl text-base font-semibold transition-all ${
+                activeCall === 'video' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
+              }`}
+            >
+              <Video size={22} />
+              {activeCall === 'video' ? 'End Video Call' : 'Video Call'}
+            </button>
+            <button
+              onClick={() => activeCall === 'audio' ? endCall() : (endCall(), setTimeout(() => setActiveCall('audio'), 50))}
+              className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-xl text-base font-semibold transition-all ${
+                activeCall === 'audio' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
+              }`}
+            >
+              <Phone size={22} />
+              {activeCall === 'audio' ? 'End Audio Call' : 'Audio Call'}
+            </button>
+            <button
+              onClick={() => activeCall === 'chat' ? endCall() : (endCall(), setTimeout(() => setActiveCall('chat'), 50))}
+              className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-xl text-base font-semibold transition-all ${
+                activeCall === 'chat' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-purple-500 hover:bg-purple-600 text-white'
+              }`}
+            >
+              <MessageSquare size={22} />
+              {activeCall === 'chat' ? 'Close Chat' : 'Chat'}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Scheduled consultations */}
+      {/* ── Video Call Panel ── */}
+      {activeCall === 'video' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Video Call Active
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 overflow-hidden rounded-b-xl">
+            <div className="bg-gray-900 relative" style={{ height: 360 }}>
+              {/* Remote video */}
+              <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <Video size={48} strokeWidth={1} />
+                  <p className="text-sm mt-2">Waiting for patient to join...</p>
+                </div>
+              </div>
+              {/* Local video */}
+              <div className="absolute bottom-4 right-4 w-44 h-32 bg-gray-700 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+                <video ref={localVideoRef} autoPlay muted playsInline
+                  className={`w-full h-full object-cover ${camOff ? 'opacity-0' : ''}`} />
+                {camOff && (
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                    <VideoOff size={20} />
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Controls */}
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-800">
+              <span className="text-xs text-green-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> Live
+              </span>
+              <div className="flex gap-2">
+                <button onClick={toggleMic}
+                  className={`p-2 rounded-full transition-colors ${micMuted ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}>
+                  <MicOff size={15} />
+                </button>
+                <button onClick={toggleCam}
+                  className={`p-2 rounded-full transition-colors ${camOff ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}>
+                  <VideoOff size={15} />
+                </button>
+                <button onClick={endCall}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-full font-medium">
+                  <PhoneOff size={14} /> End
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Audio Call Panel ── */}
+      {activeCall === 'audio' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Audio Call Active
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-green-50 dark:bg-green-950 rounded-xl py-10 flex flex-col items-center gap-5">
+              <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <Phone size={40} className="text-green-600 dark:text-green-300" strokeWidth={1.5} />
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-semibold text-green-800 dark:text-green-200">Audio Call in Progress</p>
+                <p className="text-sm text-green-600 dark:text-green-400 mt-1">Waiting for patient to connect...</p>
+              </div>
+              <div className="flex items-end gap-1.5" style={{ height: 48 }}>
+                {[4,7,5,9,6,8,4,7,5,9,6,8,4].map((h, i) => (
+                  <span key={i} style={{ height: h * 5, animationDelay: `${i * 100}ms` }}
+                    className={`w-2 rounded-full animate-pulse ${micMuted ? 'bg-gray-400' : 'bg-green-500'}`} />
+                ))}
+              </div>
+              <div className="flex gap-3">
+                <button onClick={toggleMic}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border transition-colors ${
+                    micMuted ? 'bg-red-100 text-red-600 border-red-300' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300'
+                  }`}>
+                  <MicOff size={15} /> {micMuted ? 'Unmute' : 'Mute'}
+                </button>
+                <button onClick={endCall}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium">
+                  <PhoneOff size={15} /> End Call
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Chat Panel ── */}
+      {activeCall === 'chat' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse" /> Chat
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="flex flex-col" style={{ height: 360 }}>
+              <div className="flex-1 overflow-y-auto px-4 py-3 bg-white dark:bg-gray-800 flex flex-col gap-2">
+                {chatMessages.length === 0 && (
+                  <p className="text-xs text-gray-400 text-center mt-8">No messages yet. Start the conversation.</p>
+                )}
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className="flex justify-end">
+                    <div className="max-w-xs px-3 py-2 rounded-2xl rounded-br-sm bg-blue-600 text-white text-sm">
+                      <p>{msg.text}</p>
+                      <p className="text-[10px] mt-0.5 text-blue-200">{msg.time}</p>
+                    </div>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+              <div className="flex gap-2 px-3 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <input
+                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Type a message…"
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendChat()}
+                />
+                <button onClick={sendChat}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-1 text-sm font-medium shrink-0">
+                  <Send size={14} />
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Confirmed Appointments List ── */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Today's Scheduled Consultations</CardTitle>
+            <CardTitle>Confirmed Appointments</CardTitle>
             <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
               {confirmed.length} confirmed
             </span>
           </div>
         </CardHeader>
         <CardContent>
-          {confirmed.length === 0 ? (
-            <p className="text-sm text-gray-400 py-2">No consultations scheduled for today.</p>
+          {loadingAppts ? (
+            <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={15} className="animate-spin" /> Loading...</div>
+          ) : confirmed.length === 0 ? (
+            <p className="text-sm text-gray-400 py-4">No confirmed appointments found.</p>
           ) : (
             confirmed.map(appt => (
-              <div key={appt._id} className="flex items-center justify-between py-4 border-b border-gray-100 dark:border-gray-700 last:border-0">
+              <div key={appt._id} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold">
-                    {appt.patient.firstName[0]}{appt.patient.lastName[0]}
+                    {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {appt.patient.firstName} {appt.patient.lastName}
+                      {appt.patient?.firstName} {appt.patient?.lastName}
                     </p>
                     <p className="text-xs text-gray-400">{appt.time} · {appt.reason || 'General consultation'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" className="h-8 px-3 text-xs" onClick={() => navigate(`/consultation/${appt._id}`)}>
-                    Start Consultation
-                  </Button>
-                </div>
+                <button onClick={() => navigate(`/consultation/${appt._id}`)}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 hover:bg-blue-100">
+                  Full Panel
+                </button>
               </div>
             ))
           )}
         </CardContent>
       </Card>
-
-      {/* Active call UI */}
-      {activeCall && (
-        <Card className="border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse inline-block" />
-                <p className="text-sm font-semibold text-green-800 dark:text-green-200">
-                  Call in progress with {confirmed.find(a => a._id === activeCall)?.patient.firstName}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                className="bg-red-500 hover:bg-red-600 text-white h-8 px-4 text-xs"
-                onClick={() => setActiveCall(null)}
-              >
-                <PhoneOff size={13} /> End Call
-              </Button>
-            </div>
-            <div className="mt-4 flex gap-3">
-              <div className="flex-1 h-32 rounded-xl bg-gray-800 dark:bg-gray-900 flex items-center justify-center text-gray-400 text-xs">
-                Patient Camera
-              </div>
-              <div className="w-28 h-32 rounded-xl bg-gray-700 dark:bg-gray-800 flex items-center justify-center text-gray-400 text-xs">
-                Your Camera
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
