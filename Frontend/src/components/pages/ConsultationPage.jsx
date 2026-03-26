@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useAuth } from '@clerk/clerk-react'
+import { useUser } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -29,7 +29,7 @@ const Section = ({ title, icon: Icon, children }) => (
 const ConsultationPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getToken } = useAuth()
+  const { user } = useUser()
 
   const [appt, setAppt]         = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -48,7 +48,7 @@ const ConsultationPage = () => {
   })
 
   useEffect(() => {
-    apiFetch(`/consultations/${id}`, getToken)
+    apiFetch(`/consultations/${id}`, user?.id)
       .then(data => {
         setAppt(data)
         setForm({
@@ -82,7 +82,7 @@ const ConsultationPage = () => {
   const saveNotes = async () => {
     try {
       setSaving(true)
-      const updated = await apiFetch(`/consultations/${id}/notes`, getToken, {
+      const updated = await apiFetch(`/consultations/${id}/notes`, user?.id, {
         method: 'PUT',
         body: JSON.stringify(form),
       })
@@ -101,7 +101,7 @@ const ConsultationPage = () => {
     try {
       setEnding(true)
       await saveNotes()
-      await apiFetch(`/consultations/${id}/end`, getToken, { method: 'PATCH' })
+      await apiFetch(`/consultations/${id}/end`, user?.id, { method: 'PATCH' })
       navigate('/doctor-dashboard')
     } catch (err) {
       setError(err.message)

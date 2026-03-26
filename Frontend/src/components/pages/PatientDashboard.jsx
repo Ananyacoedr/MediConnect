@@ -1,18 +1,21 @@
-import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
-import { useState, useRef } from 'react'
+import { useUser, useClerk } from '@clerk/clerk-react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { usePatientDashboard } from '@/hooks/usePatientDashboard'
 import { useSyncUser } from '@/hooks/useSyncUser'
 import { apiFetch } from '@/lib/api'
-import SymptomChecker from '@/components/SymptomChecker'
 import {
   HeartPulse, Search, CalendarPlus, Video, FileText,
   Pill, Truck, Bell, History, CalendarDays, CheckCircle,
-  Clock, ChevronRight, Loader2, Camera, UserCircle, X,
-  ClipboardList
+  Clock, ChevronRight, Loader2, Camera, UserCircle, X, MapPin
 } from 'lucide-react'
+
+const TIMES = ['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
+  '12:00 PM','12:30 PM','02:00 PM','02:30 PM','03:00 PM','03:30 PM','04:00 PM','04:30 PM']
+
+const defaultForm = { doctorId: '', date: '', time: '', reason: '', symptoms: '', consultationType: 'in-person' }
 
 const statusStyle = {
   Confirmed: 'bg-green-100 text-green-700',
@@ -21,92 +24,443 @@ const statusStyle = {
   Completed: 'bg-blue-100 text-blue-700',
 }
 
-const StatCard = ({ icon: Icon, label, value, color, active, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`w-full text-left rounded-2xl border transition-all ${
-      active
-        ? 'border-blue-400 shadow-md ring-2 ring-blue-100'
-        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
-    } bg-white`}
-  >
-    <div className="flex items-center gap-4 p-5">
+const StatCard = ({ icon: Icon, label, value, color }) => (
+  <Card>
+    <CardContent className="flex items-center gap-4 pt-6">
       <div className={`p-3 rounded-full ${color}`}>
         <Icon size={22} strokeWidth={1.5} />
       </div>
-      <div className="flex-1">
+      <div>
         <p className="text-sm text-gray-500">{label}</p>
         <p className="text-2xl font-bold text-gray-900">{value ?? '—'}</p>
       </div>
-      <ChevronRight size={16} className={`text-gray-300 transition-transform ${active ? 'rotate-90 text-blue-400' : ''}`} />
-    </div>
-  </button>
-)
-
-const AppointmentPanel = ({ title, appointments, onClose }) => (
-  <div className="col-span-2 lg:col-span-3 bg-blue-50 border border-blue-100 rounded-2xl p-4">
-    <div className="flex items-center justify-between mb-3">
-      <p className="text-sm font-semibold text-blue-700">{title}</p>
-      <button onClick={onClose} className="text-blue-400 hover:text-blue-600">
-        <X size={15} />
-      </button>
-    </div>
-    {appointments.length === 0 ? (
-      <p className="text-sm text-gray-400 py-2">No appointments in this category.</p>
-    ) : (
-      <div className="flex flex-col gap-2">
-        {appointments.map(appt => (
-          <div key={appt._id} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-blue-100">
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                Dr. {appt.doctor?.firstName} {appt.doctor?.lastName}
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {appt.doctor?.specialty && <span className="mr-2">{appt.doctor.specialty}</span>}
-                {new Date(appt.date).toLocaleDateString()} — {appt.time}
-              </p>
-            </div>
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusStyle[appt.status]}`}>
-              {appt.status}
-            </span>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
+    </CardContent>
+  </Card>
 )
 
 const quickActions = [
-  { icon: Search,       label: 'Find Doctors',      color: 'bg-blue-50 text-blue-600',    path: '/find-doctors'           },
-  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600',  path: '/book-appointment'       },
-  { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 text-purple-600',path: '/patient-appointments'   },
-  { icon: FileText,     label: 'Upload Reports',    color: 'bg-orange-50 text-orange-600',path: null                      },
-  { icon: Pill,         label: 'My Prescriptions',  color: 'bg-pink-50 text-pink-600',    path: '/patient-prescriptions'  },
-  { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 text-teal-600',    path: null                      },
-  { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 text-yellow-600',path: null                      },
-  { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600',   path: '/patient-appointments'   },
+  { icon: Search,       label: 'Find Doctors',      color: 'bg-blue-50 text-blue-600'    },
+  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600'  },
+  { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 text-purple-600'},
+  { icon: FileText,     label: 'Upload Reports',    color: 'bg-orange-50 text-orange-600'},
+  { icon: Pill,         label: 'My Prescriptions',  color: 'bg-pink-50 text-pink-600'    },
+  { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 text-teal-600'    },
+  { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 text-yellow-600'},
+  { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600'   },
 ]
+
+const HistoryModal = ({ user, onClose }) => {
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('All')
+  const FILTERS = ['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled']
+
+  useEffect(() => {
+    apiFetch('/patients/appointments', user?.id)
+      .then(setAppointments)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [user?.id])
+
+  const filtered = filter === 'All' ? appointments : appointments.filter(a => a.status === filter)
+  const counts = FILTERS.reduce((acc, f) => {
+    acc[f] = f === 'All' ? appointments.length : appointments.filter(a => a.status === f).length
+    return acc
+  }, {})
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <p className="font-semibold text-gray-900">My Appointment History</p>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        </div>
+        <div className="flex gap-2 px-6 pt-4 flex-wrap">
+          {FILTERS.map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                filter === f ? 'bg-blue-600 text-white' : 'border border-gray-200 text-gray-600 hover:border-blue-400'
+              }`}>
+              {f} ({counts[f]})
+            </button>
+          ))}
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+          {loading && <div className="flex items-center gap-2 text-gray-400 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
+          {!loading && filtered.length === 0 && <p className="text-sm text-gray-400 text-center py-8">No appointments found.</p>}
+          {!loading && filtered.map(appt => (
+            <div key={appt._id} className="border rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {appt.doctor?.profileImage
+                    ? <img src={appt.doctor.profileImage} className="w-9 h-9 rounded-full object-cover border" alt="doc" />
+                    : <div className="w-9 h-9 rounded-full bg-blue-50 border flex items-center justify-center"><UserCircle size={20} className="text-blue-300" /></div>
+                  }
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
+                    <p className="text-xs text-blue-600">{appt.doctor?.specialty}</p>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
+              </div>
+              <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+                <span className="flex items-center gap-1"><CalendarDays size={11} /> {new Date(appt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                <span className="flex items-center gap-1"><Clock size={11} /> {appt.time}</span>
+                <span className="capitalize">· {appt.consultationType}</span>
+              </div>
+              {appt.reason && <p className="text-xs text-gray-500">Reason: {appt.reason}</p>}
+              {appt.diagnosis && <p className="text-xs text-gray-500">Diagnosis: {appt.diagnosis}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const PrescriptionsModal = ({ user, onClose }) => {
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    apiFetch('/patients/appointments', user?.id)
+      .then(data => setAppointments(data.filter(a => a.prescription?.length > 0)))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [user?.id])
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <p className="font-semibold text-gray-900">My Prescriptions</p>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+          {loading && <div className="flex items-center gap-2 text-gray-400 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
+          {!loading && appointments.length === 0 && <p className="text-sm text-gray-400 text-center py-8">No prescriptions yet.</p>}
+          {!loading && appointments.map(appt => (
+            <div key={appt._id} className="border rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
+                  <p className="text-xs text-gray-400">{new Date(appt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {appt.doctor?.specialty}</p>
+                </div>
+                {appt.diagnosis && <p className="text-xs text-gray-500 max-w-[140px] text-right">{appt.diagnosis}</p>}
+              </div>
+              <div className="space-y-2">
+                {appt.prescription.map((p, i) => (
+                  <div key={i} className="bg-blue-50 rounded-lg px-3 py-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                    <p className="text-xs font-semibold text-blue-800 col-span-2">{p.medicine}</p>
+                    {p.dosage && <p className="text-xs text-gray-500">Dosage: {p.dosage}</p>}
+                    {p.duration && <p className="text-xs text-gray-500">Duration: {p.duration}</p>}
+                    {p.notes && <p className="text-xs text-gray-400 col-span-2">{p.notes}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const JoinConsultationModal = ({ user, onClose, navigate }) => {
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    apiFetch('/patients/appointments', user?.id)
+      .then(data => setAppointments(data.filter(a => a.status === 'Confirmed')))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [user?.id])
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="flex items-center gap-2">
+            <Video size={18} className="text-purple-600" />
+            <p className="font-semibold text-gray-900">Join Consultation</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+          {loading && <div className="flex items-center gap-2 text-gray-400 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
+          {!loading && appointments.length === 0 && (
+            <div className="text-center py-8 space-y-2">
+              <Video size={32} className="text-gray-300 mx-auto" />
+              <p className="text-sm text-gray-400">No confirmed consultations available.</p>
+              <p className="text-xs text-gray-400">Appointments must be confirmed by the doctor before joining.</p>
+            </div>
+          )}
+          {!loading && appointments.map(appt => (
+            <div key={appt._id} className="border rounded-xl p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                {appt.doctor?.profileImage
+                  ? <img src={appt.doctor.profileImage} className="w-10 h-10 rounded-full object-cover border" alt="doc" />
+                  : <div className="w-10 h-10 rounded-full bg-purple-50 border flex items-center justify-center"><UserCircle size={22} className="text-purple-300" /></div>
+                }
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
+                  <p className="text-xs text-gray-400">{new Date(appt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {appt.time}</p>
+                  <p className="text-xs text-purple-600 capitalize">{appt.consultationType}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { onClose(); navigate(`/consultation/${appt._id}`) }}
+                className="shrink-0 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 font-medium"
+              >
+                Join
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+const BookingModal = ({ user, onClose, onBooked }) => {
+  const [doctors, setDoctors] = useState([])
+  const [loadingDocs, setLoadingDocs] = useState(true)
+  const [form, setForm] = useState(defaultForm)
+  const [booking, setBooking] = useState(false)
+  const [bookError, setBookError] = useState(null)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    apiFetch('/doctors/list', null)
+      .then(setDoctors)
+      .finally(() => setLoadingDocs(false))
+  }, [])
+
+  const handleBook = async (e) => {
+    e.preventDefault()
+    if (!form.doctorId || !form.date || !form.time) return setBookError('Please fill all required fields.')
+    setBooking(true)
+    setBookError(null)
+    try {
+      await apiFetch('/patients/appointments/book', user.id, {
+        method: 'POST',
+        body: JSON.stringify({
+          doctorId: form.doctorId,
+          date: form.date,
+          time: form.time,
+          reason: form.reason,
+          symptoms: form.symptoms,
+          consultationType: form.consultationType,
+        }),
+      })
+      setSuccess(true)
+      onBooked()
+    } catch (err) {
+      setBookError(err.message)
+    } finally {
+      setBooking(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <p className="font-semibold text-gray-900">Book Appointment</p>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        </div>
+
+        {success ? (
+          <div className="px-6 py-10 text-center space-y-3">
+            <div className="text-green-500 text-4xl">✓</div>
+            <p className="font-semibold text-gray-900">Appointment Booked!</p>
+            <p className="text-sm text-gray-500">Your request has been sent. You'll be notified once confirmed.</p>
+            <button onClick={onClose} className="mt-2 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Done</button>
+          </div>
+        ) : (
+          <form onSubmit={handleBook} className="px-6 py-5 space-y-4">
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Select Doctor *</label>
+              {loadingDocs ? (
+                <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 size={14} className="animate-spin" /> Loading doctors...</div>
+              ) : (
+                <select
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  value={form.doctorId}
+                  onChange={e => setForm(f => ({ ...f, doctorId: e.target.value }))}
+                  required
+                >
+                  <option value="">Choose a doctor</option>
+                  {doctors.map(d => (
+                    <option key={d._id} value={d._id}>
+                      {d.title} {d.firstName} {d.lastName} — {d.specialty}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Date *</label>
+                <input
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  value={form.date}
+                  onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Time *</label>
+                <select
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  value={form.time}
+                  onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
+                  required
+                >
+                  <option value="">Select time</option>
+                  {TIMES.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Consultation Type</label>
+              <select
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                value={form.consultationType}
+                onChange={e => setForm(f => ({ ...f, consultationType: e.target.value }))}
+              >
+                <option value="in-person">In-Person</option>
+                <option value="video">Video</option>
+                <option value="audio">Audio</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Reason for Visit</label>
+              <input
+                type="text"
+                placeholder="e.g. Routine checkup"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                value={form.reason}
+                onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Symptoms (optional)</label>
+              <textarea
+                rows={2}
+                placeholder="Describe your symptoms..."
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                value={form.symptoms}
+                onChange={e => setForm(f => ({ ...f, symptoms: e.target.value }))}
+              />
+            </div>
+
+            {bookError && <p className="text-red-500 text-xs">{bookError}</p>}
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={booking}
+                className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {booking && <Loader2 size={14} className="animate-spin" />}
+                {booking ? 'Booking...' : 'Confirm Booking'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const parseApptDateTime = (date, time) => {
+  // time like "09:00 AM" or "02:30 PM"
+  const base = new Date(date)
+  const [timePart, meridiem] = time.split(' ')
+  let [hours, minutes] = timePart.split(':').map(Number)
+  if (meridiem === 'PM' && hours !== 12) hours += 12
+  if (meridiem === 'AM' && hours === 12) hours = 0
+  base.setHours(hours, minutes, 0, 0)
+  return base
+}
+
+const playAlarm = () => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)()
+  const beep = (freq, start, duration) => {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = freq
+    osc.type = 'sine'
+    gain.gain.setValueAtTime(0.4, ctx.currentTime + start)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
+    osc.start(ctx.currentTime + start)
+    osc.stop(ctx.currentTime + start + duration)
+  }
+  beep(880, 0,    0.2)
+  beep(880, 0.25, 0.2)
+  beep(880, 0.5,  0.2)
+  beep(1100, 0.8, 0.4)
+}
 
 const PatientDashboard = () => {
   const { user }    = useUser()
   const { signOut } = useClerk()
-  const { getToken } = useAuth()
-  const navigate    = useNavigate()
-  const { data, loading, error } = usePatientDashboard()
+  const navigate = useNavigate()
+  const { data, loading, error, refetch } = usePatientDashboard()
   const [profileImage, setProfileImage] = useState(null)
-  const [uploading, setUploading]       = useState(false)
-  const [activePanel, setActivePanel]   = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [showBooking, setShowBooking] = useState(false)
+  const [showReminders, setShowReminders] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [showPrescriptions, setShowPrescriptions] = useState(false)
+  const [showJoinConsultation, setShowJoinConsultation] = useState(false)
+  const [reminders, setReminders] = useState([])
+  const [loadingReminders, setLoadingReminders] = useState(false)
+  const [alarmAppt, setAlarmAppt] = useState(null)
+  const firedRef = useRef(new Set())
   const fileInputRef = useRef(null)
   useSyncUser()
 
-  const togglePanel = (key) => setActivePanel(prev => prev === key ? null : key)
+  useEffect(() => {
+    if (!user?.id) return
+    apiFetch('/patients/reminders', user.id)
+      .then(setReminders)
+      .catch(() => {})
+  }, [user?.id])
 
-  const recent = data?.recentAppointments || []
-  const panelData = {
-    total:     { title: 'All Appointments',       appointments: recent },
-    completed: { title: 'Completed Appointments', appointments: recent.filter(a => a.status === 'Completed') },
-    pending:   { title: 'Pending Appointments',   appointments: recent.filter(a => a.status === 'Pending') },
-  }
+  useEffect(() => {
+    if (!reminders.length) return
+    const check = () => {
+      const now = new Date()
+      reminders.forEach(appt => {
+        if (firedRef.current.has(appt._id)) return
+        const apptTime = parseApptDateTime(appt.date, appt.time)
+        const diff = Math.abs(now - apptTime)
+        if (diff <= 60000) {
+          firedRef.current.add(appt._id)
+          playAlarm()
+          setAlarmAppt(appt)
+        }
+      })
+    }
+    check()
+    const interval = setInterval(check, 60000)
+    return () => clearInterval(interval)
+  }, [reminders])
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0]
@@ -117,7 +471,7 @@ const PatientDashboard = () => {
       setProfileImage(base64)
       try {
         setUploading(true)
-        await apiFetch('/patients/profile-image', getToken, {
+        await apiFetch('/patients/profile-image', user?.id, {
           method: 'PATCH',
           body: JSON.stringify({ profileImage: base64 }),
         })
@@ -128,12 +482,28 @@ const PatientDashboard = () => {
     reader.readAsDataURL(file)
   }
 
-  const avatarSrc = profileImage || data?.patient?.profileImage || user?.imageUrl
+  const handleQuickAction = async (label) => {
+    if (label === 'Find Doctors') navigate('/find-doctors')
+    if (label === 'Book Appointment') setShowBooking(true)
+    if (label === 'Join Consultation') setShowJoinConsultation(true)
+    if (label === 'My Prescriptions') setShowPrescriptions(true)
+    if (label === 'History') setShowHistory(true)
+    if (label === 'Reminders') {
+      setShowReminders(true)
+      setLoadingReminders(true)
+      try {
+        const data = await apiFetch('/patients/reminders', user?.id)
+        setReminders(data)
+      } catch {}
+      finally { setLoadingReminders(false) }
+    }
+  }
+
+  const avatarSrc = profileImage || user?.imageUrl
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
-      {/* Header */}
       <header className="flex items-center justify-between px-8 py-4 border-b bg-white shadow-sm">
         <div className="flex items-center gap-2 text-blue-600 font-bold text-xl">
           <HeartPulse size={24} />
@@ -142,7 +512,6 @@ const PatientDashboard = () => {
         <div className="flex items-center gap-3">
           <span className="text-sm px-3 py-1 rounded-full bg-green-100 text-green-700 font-medium">Patient</span>
 
-          {/* Profile Picture */}
           <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
             {avatarSrc
               ? <img src={avatarSrc} alt="profile" className="w-9 h-9 rounded-full object-cover border-2 border-blue-200" />
@@ -153,7 +522,6 @@ const PatientDashboard = () => {
             </div>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
           </div>
-
           <Button
             variant="outline" size="sm"
             onClick={() => { localStorage.removeItem('mediconnect_role'); signOut({ redirectUrl: '/' }) }}
@@ -165,7 +533,6 @@ const PatientDashboard = () => {
 
       <main className="flex-1 px-6 py-8 max-w-6xl mx-auto w-full space-y-8">
 
-        {/* Welcome */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
             Welcome, <span className="text-blue-600">{data?.patient?.firstName || user?.firstName}!</span>
@@ -178,17 +545,14 @@ const PatientDashboard = () => {
           </p>
         </div>
 
-        {/* Symptom Checker */}
-        <SymptomChecker />
 
-        {/* Quick Actions */}
         <section>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {quickActions.map(({ icon: Icon, label, color, path }) => (
               <button
                 key={label}
-                onClick={() => path && navigate(path)}
+                onClick={() => handleQuickAction(label)}
                 className="flex flex-col items-center gap-3 p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
               >
                 <div className={`p-3 rounded-full ${color}`}><Icon size={22} strokeWidth={1.5} /></div>
@@ -198,14 +562,12 @@ const PatientDashboard = () => {
           </div>
         </section>
 
-        {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
             Failed to load dashboard: {error}
           </div>
         )}
 
-        {/* Stats */}
         <section>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Overview</h2>
           {loading ? (
@@ -213,84 +575,34 @@ const PatientDashboard = () => {
               <Loader2 size={18} className="animate-spin" /> Loading...
             </div>
           ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              <StatCard
-                icon={CalendarDays} label="Total Appointments" value={data?.stats?.total}
-                color="bg-blue-50 text-blue-600"
-                active={activePanel === 'total'}
-                onClick={() => togglePanel('total')}
-              />
-              <StatCard
-                icon={CheckCircle} label="Completed" value={data?.stats?.completed}
-                color="bg-green-50 text-green-600"
-                active={activePanel === 'completed'}
-                onClick={() => togglePanel('completed')}
-              />
-              <StatCard
-                icon={Clock} label="Pending" value={data?.stats?.pending}
-                color="bg-yellow-50 text-yellow-600"
-                active={activePanel === 'pending'}
-                onClick={() => togglePanel('pending')}
-              />
-
-              {/* Inline detail panel */}
-              {activePanel && (
-                <AppointmentPanel
-                  title={panelData[activePanel].title}
-                  appointments={panelData[activePanel].appointments}
-                  onClose={() => setActivePanel(null)}
-                />
-              )}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard icon={CalendarDays} label="Total Appointments"  value={data?.stats?.total}     color="bg-blue-50 text-blue-600"    />
+              <StatCard icon={CheckCircle}  label="Completed"           value={data?.stats?.completed} color="bg-green-50 text-green-600"  />
+              <StatCard icon={Clock}        label="Pending"             value={data?.stats?.pending}   color="bg-yellow-50 text-yellow-600"/>
+              <StatCard icon={CalendarPlus} label="Upcoming"            value={data?.stats?.upcoming}  color="bg-purple-50 text-purple-600"/>
             </div>
           )}
         </section>
 
-        {/* Medical History */}
-        {!loading && data?.patient?.medicalHistory?.length > 0 && (
-          <section>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ClipboardList size={16} className="text-blue-600" />
-                  Medical History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {data.patient.medicalHistory.map((item, i) => (
-                  <div key={i} className="flex items-start justify-between py-3 border-b last:border-0">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{item.condition}</p>
-                      {item.notes && <p className="text-xs text-gray-400 mt-0.5">{item.notes}</p>}
-                    </div>
-                    {item.diagnosedOn && (
-                      <span className="text-xs text-gray-400 shrink-0 ml-4">
-                        {new Date(item.diagnosedOn).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </section>
-        )}
 
-        {/* Recent Appointments */}
         {!loading && (
           <section>
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Recent Appointments</CardTitle>
-                  <button onClick={() => navigate('/patient-appointments')} className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
                     View all <ChevronRight size={14} />
                   </button>
                 </div>
               </CardHeader>
               <CardContent>
-                {recent.length === 0 && (
+                {data?.recentAppointments?.length === 0 && (
                   <p className="text-sm text-gray-400 py-2">No appointments yet.</p>
                 )}
-                {recent.map(appt => (
+                {data?.recentAppointments?.map(appt => (
                   <div key={appt._id} className="flex items-center justify-between py-3 border-b last:border-0">
                     <div>
                       <p className="text-sm font-medium text-gray-900">
@@ -312,6 +624,96 @@ const PatientDashboard = () => {
         )}
 
       </main>
+
+      {alarmAppt && (
+        <div className="fixed top-5 right-5 z-[60] bg-white border-2 border-yellow-400 rounded-2xl shadow-2xl p-4 w-80 animate-bounce">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Bell size={20} className="text-yellow-500 shrink-0" />
+              <div>
+                <p className="font-semibold text-gray-900 text-sm">Appointment Now!</p>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  {alarmAppt.doctor.title} {alarmAppt.doctor.firstName} {alarmAppt.doctor.lastName}
+                </p>
+                <p className="text-xs text-blue-600">{alarmAppt.doctor.specialty}</p>
+                <p className="text-xs text-gray-400 mt-1">{alarmAppt.time} · {alarmAppt.consultationType}</p>
+              </div>
+            </div>
+            <button onClick={() => setAlarmAppt(null)} className="text-gray-400 hover:text-gray-600 shrink-0"><X size={16} /></button>
+          </div>
+        </div>
+      )}
+
+      {showHistory && <HistoryModal user={user} onClose={() => setShowHistory(false)} />}
+      {showPrescriptions && <PrescriptionsModal user={user} onClose={() => setShowPrescriptions(false)} />}
+      {showJoinConsultation && <JoinConsultationModal user={user} onClose={() => setShowJoinConsultation(false)} navigate={navigate} />}
+
+      {showBooking && (
+        <BookingModal
+          user={user}
+          onClose={() => setShowBooking(false)}
+          onBooked={refetch}
+        />
+      )}
+
+      {showReminders && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div className="flex items-center gap-2">
+                <Bell size={18} className="text-yellow-500" />
+                <p className="font-semibold text-gray-900">Upcoming Consultations</p>
+              </div>
+              <button onClick={() => setShowReminders(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+              {loadingReminders && (
+                <div className="flex items-center gap-2 text-gray-400 py-6 justify-center">
+                  <Loader2 size={16} className="animate-spin" /> Loading reminders...
+                </div>
+              )}
+              {!loadingReminders && reminders.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-6">No upcoming appointments.</p>
+              )}
+              {!loadingReminders && reminders.map(appt => {
+                const apptDate = new Date(appt.date)
+                const today = new Date()
+                today.setHours(0,0,0,0)
+                const diffDays = Math.ceil((apptDate - today) / (1000 * 60 * 60 * 24))
+                const urgency = diffDays === 0 ? 'bg-red-50 border-red-200' : diffDays <= 2 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
+                const badge = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `In ${diffDays} days`
+                const badgeColor = diffDays === 0 ? 'bg-red-100 text-red-700' : diffDays <= 2 ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
+                return (
+                  <div key={appt._id} className={`rounded-xl border p-4 ${urgency}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        {appt.doctor.profileImage
+                          ? <img src={appt.doctor.profileImage} className="w-10 h-10 rounded-full object-cover border" alt="doc" />
+                          : <div className="w-10 h-10 rounded-full bg-white border flex items-center justify-center"><UserCircle size={22} className="text-blue-300" /></div>
+                        }
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{appt.doctor.title} {appt.doctor.firstName} {appt.doctor.lastName}</p>
+                          <p className="text-xs text-blue-600">{appt.doctor.specialty}</p>
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${badgeColor}`}>{badge}</span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
+                      <span className="flex items-center gap-1"><CalendarDays size={12} /> {apptDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                      <span className="flex items-center gap-1"><Clock size={12} /> {appt.time}</span>
+                      <span className="flex items-center gap-1"><MapPin size={12} /> {appt.consultationType}</span>
+                    </div>
+                    {appt.reason && <p className="mt-2 text-xs text-gray-400">Reason: {appt.reason}</p>}
+                    <div className="mt-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

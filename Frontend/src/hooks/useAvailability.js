@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useAuth } from '@clerk/clerk-react'
+import { useUser } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -12,7 +12,7 @@ const defaultSchedule = DAYS.map(day => ({
 }))
 
 export const useAvailability = (initialAvailability) => {
-  const { getToken } = useAuth()
+  const { user } = useUser()
   const [schedule, setSchedule] = useState(
     initialAvailability?.length ? initialAvailability : defaultSchedule
   )
@@ -28,7 +28,7 @@ export const useAvailability = (initialAvailability) => {
     try {
       setSaving(true)
       setError(null)
-      await apiFetch('/doctors/availability', getToken, {
+      await apiFetch('/doctors/availability', user.id, {
         method: 'PUT',
         body: JSON.stringify({ availability: schedule }),
       })
