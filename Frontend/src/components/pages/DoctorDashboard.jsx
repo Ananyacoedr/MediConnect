@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useUser, useClerk } from '@clerk/clerk-react'
+import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
