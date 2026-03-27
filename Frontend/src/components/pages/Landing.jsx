@@ -203,8 +203,8 @@ const Landing = () => {
                 <Search size={17} /> Find a Doctor
               </Button>
               {/* Join as Doctor — goes directly to doctor signup */}
-              <Button size="lg" variant="outline" onClick={goRegisterDoctor} className="flex items-center gap-2">
-                <Stethoscope size={17} /> Join as Doctor
+              <Button size="lg" variant="outline" onClick={goRegisterPatient} className="flex items-center gap-2">
+                <UserRound size={17} /> Join as Patient
               </Button>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-6 pt-2">
@@ -252,107 +252,6 @@ const Landing = () => {
               </button>
             ))}
           </div>
-        </section>
-
-        {/* ── HOW IT WORKS ── */}
-        <section ref={howItWorksRef} className="px-6 py-12 max-w-6xl mx-auto w-full space-y-6">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">How It Works</h2>
-          <Card className="bg-gradient-to-r from-blue-600 to-blue-500 border-0">
-            <CardContent className="pt-6 pb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {STEPS.map(({ num, title, desc }) => (
-                  <div key={num} className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white font-bold text-sm shrink-0">{num}</div>
-                    <div>
-                      <p className="text-white font-semibold text-sm">{title}</p>
-                      <p className="text-blue-100 text-xs mt-1 leading-relaxed">{desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Get Started Free — patient only */}
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={goRegisterPatient}
-                  className="flex items-center gap-2 bg-white text-blue-600 text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-blue-50 transition-colors"
-                >
-                  Get Started Free <ChevronRight size={16} />
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* ── STATS / ABOUT ── */}
-        <section ref={aboutRef} className="px-6 py-12 max-w-6xl mx-auto w-full space-y-6">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trusted Platform</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {STATS.map(({ icon: Icon, value, label, color }) => (
-              <Card key={label}>
-                <CardContent className="flex items-center gap-4 pt-5 pb-5">
-                  <div className={`p-3 rounded-full ${color}`}><Icon size={20} strokeWidth={1.5} /></div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* ── FAQ ── */}
-        <section ref={faqRef} className="px-6 py-12 max-w-6xl mx-auto w-full space-y-6">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Frequently Asked Questions</h2>
-          <FAQ />
-        </section>
-
-        {/* ── CONTACT ── */}
-        <section ref={contactRef} className="px-6 py-12 max-w-6xl mx-auto w-full space-y-6">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact Us</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card>
-              <CardContent className="pt-5 pb-5 space-y-4">
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Get in Touch</p>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-600"><Mail size={16} /></div>
-                    <span>mediconnect@global.com</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900 text-green-600"><Phone size={16} /></div>
-                    <span>+91 7283561789</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900 text-orange-600"><MapPin size={16} /></div>
-                    <span>Available 24/7 — Worldwide</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-5 pb-5 space-y-3">
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Send a Message</p>
-                <input placeholder="Your name" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                <input placeholder="Your email" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                <textarea rows={3} placeholder="Your message..." className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
-                <Button className="w-full">Send Message</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* ── CTA — patient only ── */}
-        <section className="px-6 py-12 max-w-6xl mx-auto w-full">
-          <Card>
-            <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-6 pb-6">
-              <div>
-                <p className="text-base font-semibold text-gray-900 dark:text-gray-100">Ready to take control of your health?</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Join thousands of patients on MediConnect today.</p>
-              </div>
-              <Button onClick={goRegisterPatient} className="shrink-0">Register as Patient</Button>
-            </CardContent>
-          </Card>
         </section>
 
       </main>

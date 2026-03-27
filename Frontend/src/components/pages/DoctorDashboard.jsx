@@ -8,6 +8,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useSyncUser } from '@/hooks/useSyncUser'
 import { useAvailability } from '@/hooks/useAvailability'
+import { useWebRTC } from '@/hooks/useWebRTC'
+import AnswerCall from '@/components/pages/AnswerCall'
 import ThemeToggle from '@/components/ThemeToggle'
 import { ProfileSection } from '@/components/pages/DoctorProfile'
 import {
@@ -779,45 +781,17 @@ const DoctorDashboard = () => {
   const navigate = useNavigate()
   const { data, loading, error, updateAppointmentStatus } = useDashboard()
   const [active, setActive] = useState('overview')
-  const [incomingCall, setIncomingCall] = useState(null) // { roomId, callerName, type }
+  const [inCallMode, setInCallMode] = useState(false)
   const pollRef = useRef(null)
   useSyncUser()
 
   const doctor = data?.doctor
 
-  // Poll for incoming direct calls
-  useEffect(() => {
-    if (!doctor?._id) return
-    const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-    pollRef.current = setInterval(async () => {
-      try {
-        // Check all possible patient rooms for an offer
-        const roomId = `direct_*_${doctor._id}`
-        const res = await fetch(`${BASE}/signal/incoming?doctorId=${doctor._id}`)
-        if (!res.ok) return
-        const data = await res.json()
-        if (data.roomId && !incomingCall) {
-          setIncomingCall(data)
-        }
-      } catch {}
-    }, 2000)
-    return () => clearInterval(pollRef.current)
-  }, [doctor?._id, incomingCall])
+  const { incomingCall, acceptCall, rejectCall } = useWebRTC(user?.id)
 
-  const acceptCall = () => {
-    if (!incomingCall) return
-    navigate(`/answer/${incomingCall.roomId}?type=${incomingCall.type}&name=${encodeURIComponent(incomingCall.callerName)}`)
-    setIncomingCall(null)
-  }
-
-  const declineCall = async () => {
-    if (!incomingCall) return
-    const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-    await fetch(`${BASE}/signal/${incomingCall.roomId}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'end', data: null }),
-    })
-    setIncomingCall(null)
+  const acceptAndShow = async () => {
+    await acceptCall()
+    setInCallMode(true)
   }
 
   const stats = [
@@ -1070,26 +1044,33 @@ const DoctorDashboard = () => {
       </div>
 
       {/* Incoming call notification */}
-      {incomingCall && (
+      {incomingCall && !inCallMode && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-80 text-center space-y-5 animate-bounce">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-80 text-center space-y-5">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto animate-bounce">
               <PhoneIncoming size={32} className="text-green-600" />
             </div>
             <div>
               <p className="font-bold text-gray-900 text-lg">Incoming Call</p>
-              <p className="text-gray-500 text-sm mt-1">{incomingCall.callerName} is calling you</p>
+              <p className="text-gray-500 text-sm mt-1">{incomingCall.fromName} is calling you</p>
               <span className="inline-block mt-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full capitalize">{incomingCall.type} call</span>
             </div>
             <div className="flex gap-3">
-              <button onClick={declineCall} className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
+              <button onClick={rejectCall} className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
                 <PhoneOff size={16} /> Decline
               </button>
-              <button onClick={acceptCall} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
+              <button onClick={acceptAndShow} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
                 <Phone size={16} /> Accept
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Full screen call UI */}
+      {inCallMode && (
+        <div className="fixed inset-0 z-50">
+          <AnswerCall incomingCall={incomingCall} onEnd={() => setInCallMode(false)} />
         </div>
       )}
     </div>

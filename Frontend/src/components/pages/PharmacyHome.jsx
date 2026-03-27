@@ -145,13 +145,13 @@ const PharmacyHome = () => {
           </div>
 
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && navigate(`/pharmacy/products?search=${search}`)}
               placeholder="Search medicines, health products..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg text-gray-900 text-sm focus:outline-none"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-blue-500/40 backdrop-blur-sm border border-blue-300/40 text-white placeholder-blue-100 text-sm font-medium focus:outline-none focus:bg-blue-500/50 focus:border-blue-200/60 transition-all"
             />
           </div>
 

@@ -1,111 +1,171 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { io } from 'socket.io-client'
 
-const BASE = '/api/signal'
+const SOCKET_URL  = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'
 const ICE_SERVERS = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-const POLL_MS = 1500
 
-const signal = (roomId, type, data) =>
-  fetch(`${BASE}/${roomId}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, data }),
-  })
+let socketInstance = null
 
-export const useWebRTC = (roomId, role) => {
+export const getSocket = () => {
+  if (!socketInstance) socketInstance = io(SOCKET_URL, { transports: ['websocket'] })
+  return socketInstance
+}
+
+export const useWebRTC = (userId) => {
   const [remoteStream, setRemoteStream] = useState(null)
-  const [localStream, setLocalStream]   = useState(null)
-  const [callState, setCallState]       = useState('idle')
-  const [micMuted, setMicMuted]         = useState(false)
-  const [camOff, setCamOff]             = useState(false)
+  const [localStream,  setLocalStream]  = useState(null)
+  const [callState,    setCallState]    = useState('idle') // idle | ringing | connected | ended
+  const [incomingCall, setIncomingCall] = useState(null)  // { from, fromName, offer, type }
+  const [micMuted,     setMicMuted]     = useState(false)
+  const [camOff,       setCamOff]       = useState(false)
+  const [onlineUsers,  setOnlineUsers]  = useState([])
 
-  const pcRef       = useRef(null)
-  const localRef    = useRef(null)
-  const pollRef     = useRef(null)
-  const iceSentRef  = useRef(0)  // how many ICE candidates we've already read
+  const pcRef      = useRef(null)
+  const localRef   = useRef(null)
+  const remoteRef  = useRef(null) // who we're in call with
+  const socket     = getSocket()
 
-  const stopPoll = () => { clearInterval(pollRef.current); pollRef.current = null }
+  // Register this user with the signaling server
+  useEffect(() => {
+    if (!userId) return
+    socket.emit('register', userId)
 
-  const startPoll = useCallback((pc) => {
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`${BASE}/${roomId}?role=${role}&since=${iceSentRef.current}`)
-        const data = await res.json()
+    socket.on('online-users', (users) => setOnlineUsers(users))
 
-        if (data.ended) { stopCall(); return }
+    // Doctor receives incoming call
+    socket.on('incoming-call', async ({ from, fromName, offer, type }) => {
+      setIncomingCall({ from, fromName, offer, type })
+    })
 
-        if (data.offer && role === 'patient' && !pc.remoteDescription) {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.offer))
-          const answer = await pc.createAnswer()
-          await pc.setLocalDescription(answer)
-          await signal(roomId, 'answer', answer)
-          setCallState('connected')
-        }
+    // Patient receives doctor's answer
+    socket.on('call-answered', async ({ answer }) => {
+      if (pcRef.current) {
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer))
+        setCallState('connected')
+      }
+    })
 
-        if (data.answer && role === 'doctor' && !pc.remoteDescription) {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.answer))
-          setCallState('connected')
-        }
+    // Receive ICE candidates
+    socket.on('ice-candidate', async ({ candidate }) => {
+      if (pcRef.current && candidate) {
+        try { await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate)) } catch {}
+      }
+    })
 
-        if (data.iceCandidates?.length) {
-          for (const c of data.iceCandidates) {
-            try { await pc.addIceCandidate(new RTCIceCandidate(c)) } catch {}
-          }
-          iceSentRef.current += data.iceCandidates.length
-        }
-      } catch {}
-    }, POLL_MS)
-  }, [roomId, role])
+    // Call rejected by doctor
+    socket.on('call-rejected', () => {
+      stopCall()
+      setCallState('idle')
+    })
 
-  const startCall = useCallback(async (type) => {
+    // Other side ended the call
+    socket.on('call-ended', () => {
+      stopCall()
+    })
+
+    return () => {
+      socket.off('online-users')
+      socket.off('incoming-call')
+      socket.off('call-answered')
+      socket.off('ice-candidate')
+      socket.off('call-rejected')
+      socket.off('call-ended')
+    }
+  }, [userId])
+
+  const createPC = useCallback((targetUserId) => {
+    const pc = new RTCPeerConnection(ICE_SERVERS)
+    pcRef.current = pc
+    remoteRef.current = targetUserId
+
+    pc.ontrack = (e) => setRemoteStream(e.streams[0])
+
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) {
+        socket.emit('ice-candidate', { to: targetUserId, candidate })
+      }
+    }
+
+    pc.onconnectionstatechange = () => {
+      if (['connected', 'completed'].includes(pc.connectionState)) setCallState('connected')
+      if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) stopCall()
+    }
+
+    return pc
+  }, [])
+
+  // Patient initiates call to doctor
+  const startCall = useCallback(async (targetUserId, targetName, type = 'video') => {
     const stream = await navigator.mediaDevices.getUserMedia(
       type === 'video' ? { video: true, audio: true } : { audio: true, video: false }
     )
     localRef.current = stream
     setLocalStream(stream)
-    iceSentRef.current = 0
 
-    const pc = new RTCPeerConnection(ICE_SERVERS)
-    pcRef.current = pc
-
+    const pc = createPC(targetUserId)
     stream.getTracks().forEach(t => pc.addTrack(t, stream))
 
-    pc.ontrack = (e) => setRemoteStream(e.streams[0])
+    const offer = await pc.createOffer()
+    await pc.setLocalDescription(offer)
 
-    pc.onicecandidate = ({ candidate }) => {
-      if (candidate) signal(roomId, 'ice', candidate)
-    }
+    socket.emit('call-user', {
+      to: targetUserId,
+      from: userId,
+      fromName: 'Patient',
+      offer,
+      type,
+    })
 
-    pc.onconnectionstatechange = () => {
-      if (['connected', 'completed'].includes(pc.connectionState)) setCallState('connected')
-      if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) setCallState('ended')
-    }
+    setCallState('ringing')
+  }, [userId, createPC])
 
-    startPoll(pc)
+  // Doctor accepts incoming call
+  const acceptCall = useCallback(async () => {
+    if (!incomingCall) return
+    const { from, offer, type } = incomingCall
 
-    if (role === 'doctor') {
-      const offer = await pc.createOffer()
-      await pc.setLocalDescription(offer)
-      await signal(roomId, 'offer', offer)
-      setCallState('waiting')
-    } else {
-      setCallState('waiting')
-    }
-  }, [roomId, role, startPoll])
+    const stream = await navigator.mediaDevices.getUserMedia(
+      type === 'video' ? { video: true, audio: true } : { audio: true, video: false }
+    )
+    localRef.current = stream
+    setLocalStream(stream)
 
+    const pc = createPC(from)
+    stream.getTracks().forEach(t => pc.addTrack(t, stream))
+
+    await pc.setRemoteDescription(new RTCSessionDescription(offer))
+    const answer = await pc.createAnswer()
+    await pc.setLocalDescription(answer)
+
+    socket.emit('call-answer', { to: from, answer })
+    setIncomingCall(null)
+    setCallState('connected')
+  }, [incomingCall, createPC])
+
+  // Doctor rejects call
+  const rejectCall = useCallback(() => {
+    if (!incomingCall) return
+    socket.emit('call-rejected', { to: incomingCall.from })
+    setIncomingCall(null)
+  }, [incomingCall])
+
+  // End call from either side
   const stopCall = useCallback(() => {
-    stopPoll()
-    signal(roomId, 'end', null)
+    if (remoteRef.current) {
+      socket.emit('call-ended', { to: remoteRef.current })
+    }
     pcRef.current?.close()
     pcRef.current = null
     localRef.current?.getTracks().forEach(t => t.stop())
     localRef.current = null
+    remoteRef.current = null
     setLocalStream(null)
     setRemoteStream(null)
     setCallState('idle')
     setMicMuted(false)
     setCamOff(false)
-    iceSentRef.current = 0
-  }, [roomId])
+    setIncomingCall(null)
+  }, [])
 
   const toggleMic = useCallback(() => {
     localRef.current?.getAudioTracks().forEach(t => { t.enabled = !t.enabled })
@@ -117,7 +177,11 @@ export const useWebRTC = (roomId, role) => {
     setCamOff(c => !c)
   }, [])
 
-  useEffect(() => () => stopCall(), [])
-
-  return { startCall, stopCall, toggleMic, toggleCam, localStream, remoteStream, callState, micMuted, camOff }
+  return {
+    startCall, acceptCall, rejectCall, stopCall,
+    toggleMic, toggleCam,
+    localStream, remoteStream,
+    callState, incomingCall,
+    micMuted, camOff, onlineUsers,
+  }
 }
