@@ -254,6 +254,24 @@ const Landing = () => {
           </div>
         </section>
 
+        {/* ── STATS / ABOUT ── */}
+        <section ref={aboutRef} className="px-6 py-12 max-w-6xl mx-auto w-full space-y-6">
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trusted Platform</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {STATS.map(({ icon: Icon, value, label, color }) => (
+              <Card key={label}>
+                <CardContent className="flex items-center gap-4 pt-5 pb-5">
+                  <div className={`p-3 rounded-full ${color}`}><Icon size={20} strokeWidth={1.5} /></div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
       </main>
 
       {/* ── FOOTER ── */}
