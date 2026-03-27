@@ -1,4 +1,4 @@
-import { useUser, useClerk } from '@clerk/clerk-react'
+import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -24,18 +24,51 @@ const statusStyle = {
   Completed: 'bg-blue-100 text-blue-700',
 }
 
-const StatCard = ({ icon: Icon, label, value, color }) => (
-  <Card>
-    <CardContent className="flex items-center gap-4 pt-6">
+const StatCard = ({ icon: Icon, label, value, color, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`w-full text-left rounded-2xl border transition-all bg-white ${
+      active ? 'border-blue-400 shadow-md ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+    }`}
+  >
+    <div className="flex items-center gap-4 p-5">
       <div className={`p-3 rounded-full ${color}`}>
         <Icon size={22} strokeWidth={1.5} />
       </div>
-      <div>
+      <div className="flex-1">
         <p className="text-sm text-gray-500">{label}</p>
         <p className="text-2xl font-bold text-gray-900">{value ?? '—'}</p>
       </div>
-    </CardContent>
-  </Card>
+      <ChevronRight size={16} className={`text-gray-300 transition-transform ${active ? 'rotate-90 text-blue-400' : ''}`} />
+    </div>
+  </button>
+)
+
+const AppointmentPanel = ({ title, appointments, onClose }) => (
+  <div className="col-span-2 lg:col-span-3 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+    <div className="flex items-center justify-between mb-3">
+      <p className="text-sm font-semibold text-blue-700">{title}</p>
+      <button onClick={onClose} className="text-blue-400 hover:text-blue-600"><X size={15} /></button>
+    </div>
+    {appointments.length === 0 ? (
+      <p className="text-sm text-gray-400 py-2">No appointments in this category.</p>
+    ) : (
+      <div className="flex flex-col gap-2">
+        {appointments.map(appt => (
+          <div key={appt._id} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-blue-100">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Dr. {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {appt.doctor?.specialty && <span className="mr-2">{appt.doctor.specialty}</span>}
+                {new Date(appt.date).toLocaleDateString()} — {appt.time}
+              </p>
+            </div>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
 )
 
 const quickActions = [
@@ -49,18 +82,19 @@ const quickActions = [
   { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600'   },
 ]
 
-const HistoryModal = ({ user, onClose }) => {
+const HistoryModal = ({ onClose }) => {
+  const { getToken } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('All')
   const FILTERS = ['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled']
 
   useEffect(() => {
-    apiFetch('/patients/appointments', user?.id)
+    apiFetch('/patients/appointments', getToken)
       .then(setAppointments)
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [user?.id])
+  }, [])
 
   const filtered = filter === 'All' ? appointments : appointments.filter(a => a.status === filter)
   const counts = FILTERS.reduce((acc, f) => {
@@ -118,16 +152,17 @@ const HistoryModal = ({ user, onClose }) => {
   )
 }
 
-const PrescriptionsModal = ({ user, onClose }) => {
+const PrescriptionsModal = ({ onClose }) => {
+  const { getToken } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetch('/patients/appointments', user?.id)
+    apiFetch('/patients/appointments', getToken)
       .then(data => setAppointments(data.filter(a => a.prescription?.length > 0)))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [user?.id])
+  }, [])
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -166,16 +201,17 @@ const PrescriptionsModal = ({ user, onClose }) => {
   )
 }
 
-const JoinConsultationModal = ({ user, onClose, navigate }) => {
+const JoinConsultationModal = ({ onClose, navigate }) => {
+  const { getToken } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetch('/patients/appointments', user?.id)
+    apiFetch('/patients/appointments', getToken)
       .then(data => setAppointments(data.filter(a => a.status === 'Confirmed')))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [user?.id])
+  }, [])
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -224,7 +260,139 @@ const JoinConsultationModal = ({ user, onClose, navigate }) => {
 }
 
 
-const BookingModal = ({ user, onClose, onBooked }) => {
+const UploadReportsModal = ({ onClose }) => {
+  const { getToken } = useAuth()
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [selectedId, setSelectedId]     = useState('')
+  const [files, setFiles]               = useState([])
+  const [uploading, setUploading]       = useState(false)
+  const [success, setSuccess]           = useState(false)
+  const [error, setError]               = useState(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    apiFetch('/patients/appointments', getToken)
+      .then(data => setAppointments(data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleFiles = (e) => {
+    const selected = Array.from(e.target.files)
+    setFiles(selected)
+    setSuccess(false)
+    setError(null)
+  }
+
+  const handleUpload = async () => {
+    if (!selectedId) return setError('Please select an appointment.')
+    if (files.length === 0) return setError('Please select at least one file.')
+    setUploading(true)
+    setError(null)
+    try {
+      const base64s = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })))
+      await apiFetch(`/patients/appointments/${selectedId}/reports`, getToken, {
+        method: 'POST',
+        body: JSON.stringify({ reports: base64s }),
+      })
+      setSuccess(true)
+      setFiles([])
+      if (inputRef.current) inputRef.current.value = ''
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="flex items-center gap-2">
+            <FileText size={18} className="text-orange-500" />
+            <p className="font-semibold text-gray-900">Upload Reports</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {/* Select appointment */}
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">Link to Appointment</label>
+            {loading ? (
+              <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 size={14} className="animate-spin" /> Loading...</div>
+            ) : (
+              <select
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={selectedId}
+                onChange={e => setSelectedId(e.target.value)}
+              >
+                <option value="">Select an appointment (optional)</option>
+                {appointments.map(a => (
+                  <option key={a._id} value={a._id}>
+                    Dr. {a.doctor?.firstName} {a.doctor?.lastName} — {new Date(a.date).toLocaleDateString()} {a.time}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* File picker */}
+          <div
+            onClick={() => inputRef.current?.click()}
+            className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+          >
+            <FileText size={28} className="text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-500">
+              {files.length > 0
+                ? <span className="text-blue-600 font-medium">{files.length} file{files.length > 1 ? 's' : ''} selected</span>
+                : 'Click to select files'}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG supported</p>
+            <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFiles} />
+          </div>
+
+          {/* Selected file names */}
+          {files.length > 0 && (
+            <ul className="space-y-1">
+              {files.map((f, i) => (
+                <li key={i} className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-1.5">
+                  <FileText size={12} className="text-orange-400 shrink-0" />
+                  <span className="truncate">{f.name}</span>
+                  <span className="text-gray-400 shrink-0">({(f.size / 1024).toFixed(0)} KB)</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+          {success && <p className="text-green-600 text-xs font-medium">✓ Reports uploaded successfully!</p>}
+
+          <div className="flex gap-3 pt-1">
+            <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Close</button>
+            <button
+              onClick={handleUpload}
+              disabled={uploading || files.length === 0}
+              className="flex-1 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {uploading ? <><Loader2 size={14} className="animate-spin" /> Uploading...</> : 'Upload Reports'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const BookingModal = ({ onClose, onBooked }) => {
+  const { getToken } = useAuth()
   const [doctors, setDoctors] = useState([])
   const [loadingDocs, setLoadingDocs] = useState(true)
   const [form, setForm] = useState(defaultForm)
@@ -244,7 +412,7 @@ const BookingModal = ({ user, onClose, onBooked }) => {
     setBooking(true)
     setBookError(null)
     try {
-      await apiFetch('/patients/appointments/book', user.id, {
+      await apiFetch('/patients/appointments/book', getToken, {
         method: 'POST',
         body: JSON.stringify({
           doctorId: form.doctorId,
@@ -419,28 +587,30 @@ const playAlarm = () => {
 const PatientDashboard = () => {
   const { user }    = useUser()
   const { signOut } = useClerk()
+  const { getToken } = useAuth()
   const navigate = useNavigate()
   const { data, loading, error, refetch } = usePatientDashboard()
   const [profileImage, setProfileImage] = useState(null)
   const [uploading, setUploading] = useState(false)
-  const [showBooking, setShowBooking] = useState(false)
-  const [showReminders, setShowReminders] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
-  const [showPrescriptions, setShowPrescriptions] = useState(false)
+  const [showBooking, setShowBooking]               = useState(false)
+  const [showReminders, setShowReminders]           = useState(false)
+  const [showHistory, setShowHistory]               = useState(false)
+  const [showPrescriptions, setShowPrescriptions]   = useState(false)
   const [showJoinConsultation, setShowJoinConsultation] = useState(false)
+  const [showUploadReports, setShowUploadReports]   = useState(false)
   const [reminders, setReminders] = useState([])
   const [loadingReminders, setLoadingReminders] = useState(false)
   const [alarmAppt, setAlarmAppt] = useState(null)
+  const [activePanel, setActivePanel] = useState(null)
   const firedRef = useRef(new Set())
   const fileInputRef = useRef(null)
   useSyncUser()
 
   useEffect(() => {
-    if (!user?.id) return
-    apiFetch('/patients/reminders', user.id)
+    apiFetch('/patients/reminders', getToken)
       .then(setReminders)
       .catch(() => {})
-  }, [user?.id])
+  }, [getToken])
 
   useEffect(() => {
     if (!reminders.length) return
@@ -471,7 +641,7 @@ const PatientDashboard = () => {
       setProfileImage(base64)
       try {
         setUploading(true)
-        await apiFetch('/patients/profile-image', user?.id, {
+        await apiFetch('/patients/profile-image', getToken, {
           method: 'PATCH',
           body: JSON.stringify({ profileImage: base64 }),
         })
@@ -486,13 +656,14 @@ const PatientDashboard = () => {
     if (label === 'Find Doctors') navigate('/find-doctors')
     if (label === 'Book Appointment') setShowBooking(true)
     if (label === 'Join Consultation') setShowJoinConsultation(true)
+    if (label === 'Upload Reports') setShowUploadReports(true)
     if (label === 'My Prescriptions') setShowPrescriptions(true)
     if (label === 'History') setShowHistory(true)
     if (label === 'Reminders') {
       setShowReminders(true)
       setLoadingReminders(true)
       try {
-        const data = await apiFetch('/patients/reminders', user?.id)
+        const data = await apiFetch('/patients/reminders', getToken)
         setReminders(data)
       } catch {}
       finally { setLoadingReminders(false) }
@@ -574,14 +745,43 @@ const PatientDashboard = () => {
             <div className="flex items-center gap-2 text-gray-400 py-6">
               <Loader2 size={18} className="animate-spin" /> Loading...
             </div>
-          ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={CalendarDays} label="Total Appointments"  value={data?.stats?.total}     color="bg-blue-50 text-blue-600"    />
-              <StatCard icon={CheckCircle}  label="Completed"           value={data?.stats?.completed} color="bg-green-50 text-green-600"  />
-              <StatCard icon={Clock}        label="Pending"             value={data?.stats?.pending}   color="bg-yellow-50 text-yellow-600"/>
-              <StatCard icon={CalendarPlus} label="Upcoming"            value={data?.stats?.upcoming}  color="bg-purple-50 text-purple-600"/>
-            </div>
-          )}
+          ) : (() => {
+            const recent = data?.recentAppointments || []
+            const panelData = {
+              total:     { title: 'All Appointments',       appointments: recent },
+              completed: { title: 'Completed Appointments', appointments: recent.filter(a => a.status === 'Completed') },
+              pending:   { title: 'Pending Appointments',   appointments: recent.filter(a => a.status === 'Pending') },
+            }
+            return (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <StatCard
+                  icon={CalendarDays} label="Total Appointments" value={data?.stats?.total}
+                  color="bg-blue-50 text-blue-600"
+                  active={activePanel === 'total'}
+                  onClick={() => setActivePanel(p => p === 'total' ? null : 'total')}
+                />
+                <StatCard
+                  icon={CheckCircle} label="Completed" value={data?.stats?.completed}
+                  color="bg-green-50 text-green-600"
+                  active={activePanel === 'completed'}
+                  onClick={() => setActivePanel(p => p === 'completed' ? null : 'completed')}
+                />
+                <StatCard
+                  icon={Clock} label="Pending" value={data?.stats?.pending}
+                  color="bg-yellow-50 text-yellow-600"
+                  active={activePanel === 'pending'}
+                  onClick={() => setActivePanel(p => p === 'pending' ? null : 'pending')}
+                />
+                {activePanel && (
+                  <AppointmentPanel
+                    title={panelData[activePanel].title}
+                    appointments={panelData[activePanel].appointments}
+                    onClose={() => setActivePanel(null)}
+                  />
+                )}
+              </div>
+            )
+          })()}
         </section>
 
 
@@ -644,13 +844,13 @@ const PatientDashboard = () => {
         </div>
       )}
 
-      {showHistory && <HistoryModal user={user} onClose={() => setShowHistory(false)} />}
-      {showPrescriptions && <PrescriptionsModal user={user} onClose={() => setShowPrescriptions(false)} />}
-      {showJoinConsultation && <JoinConsultationModal user={user} onClose={() => setShowJoinConsultation(false)} navigate={navigate} />}
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
+      {showPrescriptions && <PrescriptionsModal onClose={() => setShowPrescriptions(false)} />}
+      {showJoinConsultation && <JoinConsultationModal onClose={() => setShowJoinConsultation(false)} navigate={navigate} />}
+      {showUploadReports && <UploadReportsModal onClose={() => setShowUploadReports(false)} />}
 
       {showBooking && (
         <BookingModal
-          user={user}
           onClose={() => setShowBooking(false)}
           onBooked={refetch}
         />

@@ -16,9 +16,13 @@ router.get('/debug', async (req, res) => {
   }
 })
 
-router.get('/list',         async (req, res) => {
+router.get('/list', async (req, res) => {
   try {
-    const doctors = await require('../models/Doctor').find({ specialty: { $nin: ['', null] } }, '-__v')
+    const { specialty } = req.query
+    const filter = specialty
+      ? { specialty: { $regex: specialty, $options: 'i' } }
+      : {}
+    const doctors = await Doctor.find(filter, '-__v').sort({ createdAt: -1 })
     res.json(doctors)
   } catch (err) { res.status(500).json({ error: err.message }) }
 })

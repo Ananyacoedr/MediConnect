@@ -137,4 +137,21 @@ const getReminders = async (req, res) => {
   }
 }
 
-module.exports = { syncPatient, getMe, getDashboard, updateProfileImage, bookAppointment, getMyAppointments, getReminders }
+const uploadReport = async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ clerkId: req.auth.userId })
+    if (!patient) return res.status(404).json({ error: 'Patient not found' })
+    const { reports } = req.body // array of base64 strings
+    const appointment = await Appointment.findOneAndUpdate(
+      { _id: req.params.id, patient: patient._id },
+      { $push: { uploadedReports: { $each: reports } } },
+      { new: true }
+    ).populate('doctor', 'firstName lastName specialty')
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found' })
+    res.json(appointment)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
+module.exports = { syncPatient, getMe, getDashboard, updateProfileImage, bookAppointment, getMyAppointments, getReminders, uploadReport }

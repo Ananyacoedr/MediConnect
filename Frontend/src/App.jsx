@@ -10,8 +10,8 @@ import AllAppointments from './components/pages/AllAppointments'
 import DoctorProfile from './components/pages/DoctorProfile'
 import ConsultationPage from './components/pages/ConsultationPage'
 import StartConsultation from './components/pages/StartConsultation'
-import RoleRedirect from './components/RoleRedirect'
 import FindDoctors from './components/pages/FindDoctors'
+import RoleRedirect from './components/RoleRedirect'
 
 const ProtectedRoute = ({ children }) => (
   <>
@@ -35,7 +35,7 @@ function App() {
       <Route path="/doctor-profile" element={<ProtectedRoute><DoctorProfile /></ProtectedRoute>} />
       <Route path="/consultation/:id" element={<ProtectedRoute><ConsultationPage /></ProtectedRoute>} />
       <Route path="/start-consultation" element={<ProtectedRoute><StartConsultation /></ProtectedRoute>} />
-      <Route path="/find-doctors" element={<ProtectedRoute><FindDoctors /></ProtectedRoute>} />
+      <Route path="/find-doctors" element={<FindDoctors />} />
     </Routes>
   )
 }
