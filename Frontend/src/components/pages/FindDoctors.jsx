@@ -280,6 +280,12 @@ const FindDoctors = () => {
           >
             <Phone size={13} /> Audio
           </button>
+          <button
+            onClick={() => navigate(`/video/room_${doc._id}?name=${encodeURIComponent(`${doc.title || ''} ${doc.firstName} ${doc.lastName}`.trim())}`)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <Video size={13} /> Zego
+          </button>
         </div>
       </CardContent>
     </Card>

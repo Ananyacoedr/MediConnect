@@ -40,6 +40,7 @@ import WishlistPage from './components/pages/WishlistPage'
 import AdminPanel from './components/pages/AdminPanel'
 import DirectCall from './components/pages/DirectCall'
 import AnswerCall from './components/pages/AnswerCall'
+import VideoCall from './components/pages/VideoCall'
 
 const ProtectedRoute = ({ children }) => (
   <>
@@ -75,6 +76,7 @@ function App() {
       <Route path="/pharmacy/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
       <Route path="/call/:doctorId" element={<ProtectedRoute><DirectCall /></ProtectedRoute>} />
       <Route path="/answer/:roomId" element={<ProtectedRoute><AnswerCall /></ProtectedRoute>} />
+      <Route path="/video/:roomID" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
     </Routes>
     </ErrorBoundary>
   )
