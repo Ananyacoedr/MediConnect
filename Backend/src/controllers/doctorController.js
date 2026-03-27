@@ -4,18 +4,23 @@ require('../models/Patient')
 
 const syncDoctor = async (req, res) => {
   try {
-    const { clerkId, firstName, lastName, email } = req.body
-    // Try to find by clerkId first, then fall back to email (handles seeded doctors)
+    const { clerkId, firstName, lastName, email, profileImage } = req.body
     let doctor = await Doctor.findOne({ clerkId })
     if (!doctor && email) {
       doctor = await Doctor.findOneAndUpdate(
         { email },
-        { $set: { clerkId } },
+        { $set: { clerkId, firstName, lastName, profileImage } },
         { new: true }
       )
     }
     if (!doctor) {
-      doctor = await Doctor.create({ clerkId, firstName, lastName, email })
+      doctor = await Doctor.create({ clerkId, firstName, lastName, email, profileImage })
+    } else {
+      // Update name/image in case it changed
+      if (firstName) doctor.firstName = firstName
+      if (lastName)  doctor.lastName  = lastName
+      if (profileImage) doctor.profileImage = profileImage
+      await doctor.save()
     }
     res.json(doctor)
   } catch (err) {
@@ -23,10 +28,15 @@ const syncDoctor = async (req, res) => {
   }
 }
 
+const getOrCreateDoctor = async (clerkId) => {
+  let doctor = await Doctor.findOne({ clerkId })
+  if (!doctor) doctor = await Doctor.create({ clerkId, firstName: 'Doctor', lastName: '', email: '' })
+  return doctor
+}
+
 const getProfile = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ clerkId: req.auth.userId })
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
+    const doctor = await getOrCreateDoctor(req.auth.userId)
     res.json(doctor)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -43,9 +53,8 @@ const updateProfile = async (req, res) => {
     const doctor = await Doctor.findOneAndUpdate(
       { clerkId: req.auth.userId },
       { $set: update },
-      { returnDocument: 'after' }
+      { new: true, upsert: true }
     )
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
     res.json(doctor)
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -68,8 +77,7 @@ const updateAvailability = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ clerkId: req.auth.userId })
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
+    const doctor = await getOrCreateDoctor(req.auth.userId)
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -108,8 +116,7 @@ const getDashboardStats = async (req, res) => {
 
 const getAllAppointments = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ clerkId: req.auth.userId })
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
+    const doctor = await getOrCreateDoctor(req.auth.userId)
 
     const appointments = await Appointment.find({ doctor: doctor._id })
       .populate('patient', 'firstName lastName email phone gender dob profileImage')
