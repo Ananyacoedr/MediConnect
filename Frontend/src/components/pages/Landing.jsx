@@ -85,10 +85,46 @@ const FAQ = () => {
   )
 }
 
+// ── Auth Modal ────────────────────────────────────────────────────────────
+const AuthModal = ({ mode, onClose, onPatient, onDoctor }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <Card className="w-full max-w-sm relative">
+      <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X size={18} /></button>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-blue-600">
+          <HeartPulse size={20} /> {mode === 'signin' ? 'Sign In to MediConnect' : 'Join MediConnect'}
+        </CardTitle>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Choose your role to continue</p>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <button onClick={onPatient}
+          className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-950 transition-all group">
+          <div className="p-2 rounded-full bg-green-50 dark:bg-green-900 text-green-600"><UserRound size={20} strokeWidth={1.5} /></div>
+          <div className="text-left flex-1">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{mode === 'signin' ? 'Sign in as Patient' : "I'm a Patient"}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Book appointments & consult doctors</p>
+          </div>
+          <ChevronRight size={15} className="text-gray-300 group-hover:text-green-500" />
+        </button>
+        <button onClick={onDoctor}
+          className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-all group">
+          <div className="p-2 rounded-full bg-blue-50 dark:bg-blue-900 text-blue-600"><Stethoscope size={20} strokeWidth={1.5} /></div>
+          <div className="text-left flex-1">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{mode === 'signin' ? 'Sign in as Doctor' : "I'm a Doctor"}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Manage patients & consultations</p>
+          </div>
+          <ChevronRight size={15} className="text-gray-300 group-hover:text-blue-500" />
+        </button>
+      </CardContent>
+    </Card>
+  </div>
+)
+
 // ── Sections refs for scroll ──────────────────────────────────────────────
 const Landing = () => {
   const navigate = useNavigate()
   const { isSignedIn } = useAuth()
+  const [modal, setModal] = useState(null) // null | 'signin' | 'register'
 
   const featuresRef    = useRef(null)
   const specialtiesRef = useRef(null)
@@ -106,11 +142,25 @@ const Landing = () => {
 
   const goRegisterPatient = () => { localStorage.setItem('mediconnect_role', 'patient'); navigate('/signup') }
   const goRegisterDoctor  = () => { localStorage.setItem('mediconnect_role', 'doctor');  navigate('/signup') }
-  const goSignIn          = () => navigate('/login')
+  const goSignInPatient   = () => { localStorage.setItem('mediconnect_role', 'patient'); navigate('/login') }
+  const goSignInDoctor    = () => { localStorage.setItem('mediconnect_role', 'doctor');  navigate('/login') }
   const goFindDoctors     = (specialty) => navigate(specialty ? `/find-doctors?specialty=${encodeURIComponent(specialty)}` : '/find-doctors')
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
+
+      {modal === 'signin' && (
+        <AuthModal mode="signin" onClose={() => setModal(null)}
+          onPatient={() => { setModal(null); goSignInPatient() }}
+          onDoctor={() => { setModal(null); goSignInDoctor() }}
+        />
+      )}
+      {modal === 'register' && (
+        <AuthModal mode="register" onClose={() => setModal(null)}
+          onPatient={() => { setModal(null); goRegisterPatient() }}
+          onDoctor={() => { setModal(null); goRegisterDoctor() }}
+        />
+      )}
 
       {/* ── HEADER ── */}
       <header className="flex items-center justify-between px-8 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
@@ -127,11 +177,8 @@ const Landing = () => {
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Button variant="ghost" size="sm" onClick={goSignIn}>Sign In</Button>
-          <Button size="sm" onClick={goRegisterPatient}>Register</Button>
-          <Button size="sm" variant="outline" onClick={goRegisterDoctor} className="flex items-center gap-1.5">
-            <Stethoscope size={14} /> Join as Doctor
-          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setModal('signin')}>Sign In</Button>
+          <Button size="sm" onClick={() => setModal('register')}>Register</Button>
         </div>
       </header>
 
