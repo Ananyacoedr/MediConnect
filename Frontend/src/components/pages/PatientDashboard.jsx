@@ -246,7 +246,7 @@ const JoinConsultationModal = ({ onClose, navigate }) => {
                 </div>
               </div>
               <button
-                onClick={() => { onClose(); navigate(`/consultation/${appt._id}`) }}
+                onClick={() => { onClose(); navigate(`/patient-consultation/${appt._id}`) }}
                 className="shrink-0 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 font-medium"
               >
                 Join
@@ -602,9 +602,38 @@ const PatientDashboard = () => {
   const [loadingReminders, setLoadingReminders] = useState(false)
   const [alarmAppt, setAlarmAppt] = useState(null)
   const [activePanel, setActivePanel] = useState(null)
+  const [incomingCall, setIncomingCall] = useState(null) // { apptId, doctorName, type }
   const firedRef = useRef(new Set())
   const fileInputRef = useRef(null)
   useSyncUser()
+
+  // Poll for incoming call from doctor (doctor starts call from ConsultationPage)
+  useEffect(() => {
+    let interval
+    const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+    const checkIncoming = async () => {
+      try {
+        // Get confirmed appointments and check if any have an active signal offer
+        const appointments = await apiFetch('/patients/appointments', getToken)
+        const confirmed = appointments.filter(a => a.status === 'Confirmed')
+        for (const appt of confirmed) {
+          const res = await fetch(`${BASE}/signal/${appt._id}?role=patient&since=0`)
+          const data = await res.json()
+          if (data.offer) {
+            setIncomingCall({
+              apptId: appt._id,
+              doctorName: `${appt.doctor?.title || ''} ${appt.doctor?.firstName} ${appt.doctor?.lastName}`.trim(),
+              specialty: appt.doctor?.specialty,
+              type: appt.consultationType || 'video',
+            })
+            return
+          }
+        }
+      } catch {}
+    }
+    interval = setInterval(checkIncoming, 3000)
+    return () => clearInterval(interval)
+  }, [getToken])
 
   useEffect(() => {
     apiFetch('/patients/reminders', getToken)
@@ -658,6 +687,7 @@ const PatientDashboard = () => {
     if (label === 'Join Consultation') setShowJoinConsultation(true)
     if (label === 'Upload Reports') setShowUploadReports(true)
     if (label === 'My Prescriptions') setShowPrescriptions(true)
+    if (label === 'Order Medicines') navigate('/pharmacy')
     if (label === 'History') setShowHistory(true)
     if (label === 'Reminders') {
       setShowReminders(true)
@@ -844,6 +874,36 @@ const PatientDashboard = () => {
         </div>
       )}
 
+      {/* Incoming call notification from doctor */}
+      {incomingCall && (
+        <div className="fixed top-5 right-5 z-[70] bg-white border-2 border-blue-500 rounded-2xl shadow-2xl p-4 w-80">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+              <Video size={20} className="text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900 text-sm">Doctor is calling!</p>
+              <p className="text-xs text-gray-600 mt-0.5">{incomingCall.doctorName}</p>
+              <p className="text-xs text-blue-600">{incomingCall.specialty}</p>
+              <p className="text-xs text-gray-400 capitalize mt-0.5">{incomingCall.type} call</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => { setIncomingCall(null); navigate(`/patient-consultation/${incomingCall.apptId}`) }}
+                  className="flex-1 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg font-medium flex items-center justify-center gap-1"
+                >
+                  <Video size={12} /> Join
+                </button>
+                <button
+                  onClick={() => setIncomingCall(null)}
+                  className="flex-1 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 text-xs rounded-lg font-medium"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
       {showPrescriptions && <PrescriptionsModal onClose={() => setShowPrescriptions(false)} />}
       {showJoinConsultation && <JoinConsultationModal onClose={() => setShowJoinConsultation(false)} navigate={navigate} />}

@@ -18,10 +18,15 @@ router.get('/debug', async (req, res) => {
 
 router.get('/list', async (req, res) => {
   try {
-    const { specialty } = req.query
-    const filter = specialty
-      ? { specialty: { $regex: specialty, $options: 'i' } }
-      : {}
+    const { specialty, search } = req.query
+    const filter = {}
+    if (specialty) filter.specialty = { $regex: specialty, $options: 'i' }
+    if (search) filter.$or = [
+      { firstName: { $regex: search, $options: 'i' } },
+      { lastName:  { $regex: search, $options: 'i' } },
+      { specialty: { $regex: search, $options: 'i' } },
+      { email:     { $regex: search, $options: 'i' } },
+    ]
     const doctors = await Doctor.find(filter, '-__v').sort({ createdAt: -1 })
     res.json(doctors)
   } catch (err) { res.status(500).json({ error: err.message }) }

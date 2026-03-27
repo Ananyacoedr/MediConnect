@@ -154,4 +154,17 @@ const uploadReport = async (req, res) => {
   }
 }
 
-module.exports = { syncPatient, getMe, getDashboard, updateProfileImage, bookAppointment, getMyAppointments, getReminders, uploadReport }
+const getAppointmentById = async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ clerkId: req.auth.userId })
+    if (!patient) return res.status(404).json({ error: 'Patient not found' })
+    const appointment = await Appointment.findOne({ _id: req.params.id, patient: patient._id })
+      .populate('doctor', 'firstName lastName specialty profileImage title location')
+    if (!appointment) return res.status(404).json({ error: 'Appointment not found' })
+    res.json(appointment)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
+
+module.exports = { syncPatient, getMe, getDashboard, updateProfileImage, bookAppointment, getMyAppointments, getAppointmentById, getReminders, uploadReport }

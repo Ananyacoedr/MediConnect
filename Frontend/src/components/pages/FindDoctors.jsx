@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
   HeartPulse, ArrowLeft, Search, Loader2, X,
   MapPin, Stethoscope, Star, CalendarPlus,
-  Video, Mic, User, CheckCircle
+  Video, Mic, User, CheckCircle, Phone
 } from 'lucide-react'
 
 const SPECIALTIES = [
@@ -202,17 +202,25 @@ const FindDoctors = () => {
   const [search, setSearch]         = useState('')
   const [specialty, setSpecialty]   = useState(searchParams.get('specialty') || 'All')
 
-  useEffect(() => {
-    apiFetch('/doctors/list', null)
+  const fetchDoctors = (q = '', spec = '') => {
+    setLoading(true)
+    const params = new URLSearchParams()
+    if (q) params.set('search', q)
+    if (spec && spec !== 'All') params.set('specialty', spec)
+    apiFetch(`/doctors/list?${params}`, null)
       .then(setDoctors)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [])
+  }
 
-  const filtered = doctors.filter(d =>
-    `${d.firstName} ${d.lastName} ${d.specialty}`.toLowerCase().includes(search.toLowerCase()) &&
-    (specialty === 'All' || d.specialty?.toLowerCase().includes(specialty.toLowerCase()))
-  )
+  useEffect(() => { fetchDoctors() }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => fetchDoctors(search, specialty), 300)
+    return () => clearTimeout(t)
+  }, [search, specialty])
+
+  const filtered = doctors
 
   // Group by specialty
   const grouped = filtered.reduce((acc, doc) => {
@@ -228,9 +236,9 @@ const FindDoctors = () => {
   const dbSpecialties = ['All', ...Array.from(new Set(doctors.map(d => d.specialty).filter(Boolean))).sort()]
 
   const DoctorCard = ({ doc }) => (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/doctor/${doc._id}`)}>
+    <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-5 pb-5">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 cursor-pointer" onClick={() => navigate(`/doctor/${doc._id}`)}>
           {doc.profileImage
             ? <img src={doc.profileImage} alt="doctor" className="w-12 h-12 rounded-full object-cover border-2 border-blue-100 shrink-0" />
             : <div className="w-12 h-12 rounded-full bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-base shrink-0">
@@ -255,10 +263,24 @@ const FindDoctors = () => {
             {doc.bio && <p className="text-xs text-gray-400 mt-1.5 line-clamp-2">{doc.bio}</p>}
           </div>
         </div>
-        <Button size="sm" className="w-full mt-3 flex items-center gap-2"
-          onClick={e => { e.stopPropagation(); navigate(`/doctor/${doc._id}`) }}>
-          <CalendarPlus size={13} /> Book Appointment
-        </Button>
+        <div className="flex gap-2 mt-3">
+          <Button size="sm" className="flex-1 flex items-center gap-1.5"
+            onClick={() => navigate(`/doctor/${doc._id}`)}>
+            <CalendarPlus size={13} /> Book
+          </Button>
+          <button
+            onClick={() => navigate(`/call/${doc._id}?type=video&name=${encodeURIComponent(`${doc.title || ''} ${doc.firstName} ${doc.lastName}`.trim())}`)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <Video size={13} /> Call
+          </button>
+          <button
+            onClick={() => navigate(`/call/${doc._id}?type=audio&name=${encodeURIComponent(`${doc.title || ''} ${doc.firstName} ${doc.lastName}`.trim())}`)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <Phone size={13} /> Audio
+          </button>
+        </div>
       </CardContent>
     </Card>
   )
@@ -285,7 +307,7 @@ const FindDoctors = () => {
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search by name or specialty..."
+            placeholder="Search by name, email or specialty..."
             className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
 

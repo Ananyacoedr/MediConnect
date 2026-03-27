@@ -8,6 +8,9 @@ const appointmentRoutes  = require('./src/routes/appointment')
 const consultationRoutes = require('./src/routes/consultation')
 const patientRoutes      = require('./src/routes/patient')
 const cartRoutes         = require('./src/routes/cart')
+const productRoutes      = require('./src/routes/product')
+const orderRoutes        = require('./src/routes/order')
+const wishlistRoutes     = require('./src/routes/wishlist')
 
 const app = express()
 
@@ -20,6 +23,9 @@ app.use('/api/appointments',  appointmentRoutes)
 app.use('/api/consultations', consultationRoutes)
 app.use('/api/patients',      patientRoutes)
 app.use('/api/cart',          cartRoutes)
+app.use('/api/products',      productRoutes)
+app.use('/api/orders',        orderRoutes)
+app.use('/api/wishlist',      wishlistRoutes)
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }))
 
@@ -46,13 +52,25 @@ app.post('/api/signal/:roomId', (req, res) => {
 app.get('/api/signal/:roomId', (req, res) => {
   const room = getRoom(req.params.roomId)
   const { since = 0, role } = req.query
-  // Return what the OTHER role needs
   res.json({
     offer:          role === 'patient' ? room.offer   : null,
     answer:         role === 'doctor'  ? room.answer  : null,
     iceCandidates:  room.iceCandidates.slice(Number(since)),
     ended:          !rooms[req.params.roomId] && since > 0,
   })
+})
+
+// Incoming call check for doctor
+app.get('/api/signal/incoming', (req, res) => {
+  const { doctorId } = req.query
+  if (!doctorId) return res.json(null)
+  const entry = Object.entries(rooms).find(([roomId, room]) =>
+    roomId.startsWith('direct_') && roomId.includes(doctorId) && room.offer
+  )
+  if (!entry) return res.json(null)
+  const [roomId, room] = entry
+  // Extract caller info from roomId: direct_{patientId}_{doctorId}
+  res.json({ roomId, type: 'video', callerName: 'Patient' })
 })
 
 mongoose.connect(process.env.MONGODB_URI)

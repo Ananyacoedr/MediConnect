@@ -7,7 +7,8 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "seed": "node seed.js",
-    "seed:doctors": "node seedDoctors.js"
+    "seed:doctors": "node seedDoctors.js",
+    "seed:products": "node seedProducts.js"
   },
   "keywords": [],
   "author": "",
