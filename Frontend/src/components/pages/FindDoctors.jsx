@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth, useUser } from '@clerk/clerk-react'
+import { useAuth } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -196,56 +196,105 @@ const BookingModal = ({ doctor, userId, onClose }) => {
 const FindDoctors = () => {
   const navigate = useNavigate()
   const { userId } = useAuth()
-  const { user } = useUser()
   const [searchParams] = useSearchParams()
   const [doctors, setDoctors]       = useState([])
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
   const [specialty, setSpecialty]   = useState(searchParams.get('specialty') || 'All')
-  const [bookingDoc, setBookingDoc] = useState(null)
 
   useEffect(() => {
-    const query = specialty !== 'All' ? `?specialty=${encodeURIComponent(specialty)}` : ''
-    apiFetch(`/doctors/list${query}`, null)
+    apiFetch('/doctors/list', null)
       .then(setDoctors)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [specialty])
+  }, [])
 
   const filtered = doctors.filter(d =>
-    `${d.firstName} ${d.lastName} ${d.specialty}`.toLowerCase().includes(search.toLowerCase())
+    `${d.firstName} ${d.lastName} ${d.specialty}`.toLowerCase().includes(search.toLowerCase()) &&
+    (specialty === 'All' || d.specialty?.toLowerCase().includes(specialty.toLowerCase()))
+  )
+
+  // Group by specialty
+  const grouped = filtered.reduce((acc, doc) => {
+    const key = doc.specialty || 'Other'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(doc)
+    return acc
+  }, {})
+
+  const specialtyKeys = Object.keys(grouped).sort()
+
+  // Unique specialties from actual DB data for filter pills
+  const dbSpecialties = ['All', ...Array.from(new Set(doctors.map(d => d.specialty).filter(Boolean))).sort()]
+
+  const DoctorCard = ({ doc }) => (
+    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/doctor/${doc._id}`)}>
+      <CardContent className="pt-5 pb-5">
+        <div className="flex items-start gap-3">
+          {doc.profileImage
+            ? <img src={doc.profileImage} alt="doctor" className="w-12 h-12 rounded-full object-cover border-2 border-blue-100 shrink-0" />
+            : <div className="w-12 h-12 rounded-full bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-base shrink-0">
+                {doc.firstName?.[0]}{doc.lastName?.[0]}
+              </div>
+          }
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{doc.title} {doc.firstName} {doc.lastName}</p>
+            {doc.designation && <p className="text-xs text-gray-400 truncate">{doc.designation}</p>}
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {doc.experience > 0 && (
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <Star size={11} className="text-yellow-400" /> {doc.experience} yrs
+                </span>
+              )}
+              {doc.location && (
+                <span className="text-xs text-gray-500 flex items-center gap-1 truncate">
+                  <MapPin size={11} /> {doc.location}
+                </span>
+              )}
+            </div>
+            {doc.bio && <p className="text-xs text-gray-400 mt-1.5 line-clamp-2">{doc.bio}</p>}
+          </div>
+        </div>
+        <Button size="sm" className="w-full mt-3 flex items-center gap-2"
+          onClick={e => { e.stopPropagation(); navigate(`/doctor/${doc._id}`) }}>
+          <CalendarPlus size={13} /> Book Appointment
+        </Button>
+      </CardContent>
+    </Card>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="flex items-center justify-between px-8 py-4 border-b bg-white shadow-sm">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      <header className="flex items-center justify-between px-8 py-4 border-b bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex items-center gap-2 text-blue-600 font-bold text-xl">
           <HeartPulse size={24} /> MediConnect
         </div>
-        <button onClick={() => navigate('/patient-dashboard')}
+        <button onClick={() => navigate(-1)}
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors">
-          <ArrowLeft size={16} /> Back to Dashboard
+          <ArrowLeft size={16} /> Back
         </button>
       </header>
 
       <main className="flex-1 px-6 py-8 max-w-6xl mx-auto w-full space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Find Doctors</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Find Doctors</h1>
           <p className="text-sm text-gray-500 mt-1">Browse verified specialists and book an appointment.</p>
         </div>
 
+        {/* Search */}
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by name or specialty..."
-            className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" />
         </div>
 
+        {/* Specialty filter pills from DB */}
         <div className="flex gap-2 flex-wrap">
-          {SPECIALTIES.map(s => (
+          {dbSpecialties.map(s => (
             <button key={s} onClick={() => setSpecialty(s)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                specialty === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400'
+                specialty === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-blue-400'
               }`}>{s}</button>
           ))}
         </div>
@@ -259,58 +308,45 @@ const FindDoctors = () => {
             <Stethoscope size={40} strokeWidth={1} />
             <p className="text-sm">No doctors found.</p>
           </div>
+        ) : specialty !== 'All' ? (
+          // ── Filtered by specialty: flat grid ──
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{specialty}</span>
+              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
+                {filtered.length} doctor{filtered.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map(doc => <DoctorCard key={doc._id} doc={doc} />)}
+            </div>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(doc => (
-              <Card key={doc._id} className="hover:shadow-md transition-shadow">
-                <CardContent className="pt-5 pb-5">
-                  <div className="flex items-start gap-4">
-                    {doc.profileImage
-                      ? <img src={doc.profileImage} alt="doctor" className="w-14 h-14 rounded-full object-cover border-2 border-blue-100 shrink-0" />
-                      : <div className="w-14 h-14 rounded-full bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-lg shrink-0">
-                          {doc.firstName?.[0]}{doc.lastName?.[0]}
-                        </div>
-                    }
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{doc.title} {doc.firstName} {doc.lastName}</p>
-                      {doc.specialty && <p className="text-xs text-blue-600 mt-0.5">{doc.specialty}</p>}
-                      {doc.designation && <p className="text-xs text-gray-400">{doc.designation}</p>}
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {doc.experience > 0 && (
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Star size={11} className="text-yellow-400" /> {doc.experience} yrs
-                          </span>
-                        )}
-                        {doc.location && (
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <MapPin size={11} /> {doc.location}
-                          </span>
-                        )}
-                      </div>
-                      {doc.bio && <p className="text-xs text-gray-400 mt-2 line-clamp-2">{doc.bio}</p>}
-                    </div>
+          // ── All: grouped by specialization ──
+          <div className="space-y-10">
+            {specialtyKeys.map(spec => (
+              <div key={spec}>
+                {/* Section header */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Stethoscope size={18} className="text-blue-600" />
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{spec}</h2>
                   </div>
-                  <Button
-                    size="sm"
-                    className="w-full mt-4 flex items-center gap-2"
-                    onClick={() => setBookingDoc(doc)}
-                  >
-                    <CalendarPlus size={14} /> Book Appointment
-                  </Button>
-                </CardContent>
-              </Card>
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
+                    {grouped[spec].length} doctor{grouped[spec].length !== 1 ? 's' : ''}
+                  </span>
+                  <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                  <button onClick={() => setSpecialty(spec)}
+                    className="text-xs text-blue-600 hover:underline shrink-0">View all →</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {grouped[spec].map(doc => <DoctorCard key={doc._id} doc={doc} />)}
+                </div>
+              </div>
             ))}
           </div>
         )}
       </main>
-
-      {bookingDoc && (
-        <BookingModal
-          doctor={bookingDoc}
-          userId={userId}
-          onClose={() => setBookingDoc(null)}
-        />
-      )}
     </div>
   )
 }

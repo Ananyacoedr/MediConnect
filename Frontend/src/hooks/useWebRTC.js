@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
-const BASE = 'http://localhost:5000/api/signal'
+const BASE = '/api/signal'
 const ICE_SERVERS = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
 const POLL_MS = 1500
 

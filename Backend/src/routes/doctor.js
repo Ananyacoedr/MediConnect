@@ -34,4 +34,12 @@ router.put('/availability', requireAuth, updateAvailability)
 router.get('/dashboard',    requireAuth, getDashboardStats)
 router.get('/appointments', requireAuth, getAllAppointments)
 
+router.get('/:id', async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id, '-__v')
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
+    res.json(doctor)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
 module.exports = router
