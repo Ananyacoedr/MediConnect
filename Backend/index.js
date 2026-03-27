@@ -8,6 +8,9 @@ const appointmentRoutes  = require('./src/routes/appointment')
 const consultationRoutes = require('./src/routes/consultation')
 const patientRoutes      = require('./src/routes/patient')
 const cartRoutes         = require('./src/routes/cart')
+const productRoutes      = require('./src/routes/product')
+const orderRoutes        = require('./src/routes/order')
+const wishlistRoutes     = require('./src/routes/wishlist')
 
 const app = express()
 
@@ -20,6 +23,9 @@ app.use('/api/appointments',  appointmentRoutes)
 app.use('/api/consultations', consultationRoutes)
 app.use('/api/patients',      patientRoutes)
 app.use('/api/cart',          cartRoutes)
+app.use('/api/products',      productRoutes)
+app.use('/api/orders',        orderRoutes)
+app.use('/api/wishlist',      wishlistRoutes)
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }))
 

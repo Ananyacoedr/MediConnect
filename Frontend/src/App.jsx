@@ -12,6 +12,13 @@ import ConsultationPage from './components/pages/ConsultationPage'
 import StartConsultation from './components/pages/StartConsultation'
 import FindDoctors from './components/pages/FindDoctors'
 import RoleRedirect from './components/RoleRedirect'
+import PharmacyHome from './components/pages/PharmacyHome'
+import ProductListing from './components/pages/ProductListing'
+import ProductDetail from './components/pages/ProductDetail'
+import PharmacyCart from './components/pages/PharmacyCart'
+import MyOrders from './components/pages/MyOrders'
+import WishlistPage from './components/pages/WishlistPage'
+import AdminPanel from './components/pages/AdminPanel'
 
 const ProtectedRoute = ({ children }) => (
   <>
@@ -36,6 +43,13 @@ function App() {
       <Route path="/consultation/:id" element={<ProtectedRoute><ConsultationPage /></ProtectedRoute>} />
       <Route path="/start-consultation" element={<ProtectedRoute><StartConsultation /></ProtectedRoute>} />
       <Route path="/find-doctors" element={<FindDoctors />} />
+      <Route path="/pharmacy" element={<PharmacyHome />} />
+      <Route path="/pharmacy/products" element={<ProductListing />} />
+      <Route path="/pharmacy/product/:id" element={<ProductDetail />} />
+      <Route path="/pharmacy/cart" element={<PharmacyCart />} />
+      <Route path="/pharmacy/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+      <Route path="/pharmacy/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
+      <Route path="/pharmacy/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
     </Routes>
   )
 }
