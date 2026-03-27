@@ -659,6 +659,7 @@ const PatientDashboard = () => {
     if (label === 'Upload Reports') setShowUploadReports(true)
     if (label === 'My Prescriptions') setShowPrescriptions(true)
     if (label === 'Order Medicines') navigate('/pharmacy')
+    if (label === 'History') setShowHistory(true)
     if (label === 'Reminders') {
       setShowReminders(true)
       setLoadingReminders(true)

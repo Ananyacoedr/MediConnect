@@ -18,10 +18,15 @@ router.get('/debug', async (req, res) => {
 
 router.get('/list', async (req, res) => {
   try {
-    const { specialty } = req.query
-    const filter = specialty
-      ? { specialty: { $regex: specialty, $options: 'i' } }
-      : {}
+    const { specialty, search } = req.query
+    const filter = {}
+    if (specialty) filter.specialty = { $regex: specialty, $options: 'i' }
+    if (search) filter.$or = [
+      { firstName: { $regex: search, $options: 'i' } },
+      { lastName:  { $regex: search, $options: 'i' } },
+      { specialty: { $regex: search, $options: 'i' } },
+      { email:     { $regex: search, $options: 'i' } },
+    ]
     const doctors = await Doctor.find(filter, '-__v').sort({ createdAt: -1 })
     res.json(doctors)
   } catch (err) { res.status(500).json({ error: err.message }) }
@@ -33,5 +38,13 @@ router.put('/profile',      requireAuth, updateProfile)
 router.put('/availability', requireAuth, updateAvailability)
 router.get('/dashboard',    requireAuth, getDashboardStats)
 router.get('/appointments', requireAuth, getAllAppointments)
+
+router.get('/:id', async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id, '-__v')
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
+    res.json(doctor)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
 
 module.exports = router

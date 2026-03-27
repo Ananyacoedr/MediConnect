@@ -52,13 +52,25 @@ app.post('/api/signal/:roomId', (req, res) => {
 app.get('/api/signal/:roomId', (req, res) => {
   const room = getRoom(req.params.roomId)
   const { since = 0, role } = req.query
-  // Return what the OTHER role needs
   res.json({
     offer:          role === 'patient' ? room.offer   : null,
     answer:         role === 'doctor'  ? room.answer  : null,
     iceCandidates:  room.iceCandidates.slice(Number(since)),
     ended:          !rooms[req.params.roomId] && since > 0,
   })
+})
+
+// Incoming call check for doctor
+app.get('/api/signal/incoming', (req, res) => {
+  const { doctorId } = req.query
+  if (!doctorId) return res.json(null)
+  const entry = Object.entries(rooms).find(([roomId, room]) =>
+    roomId.startsWith('direct_') && roomId.includes(doctorId) && room.offer
+  )
+  if (!entry) return res.json(null)
+  const [roomId, room] = entry
+  // Extract caller info from roomId: direct_{patientId}_{doctorId}
+  res.json({ roomId, type: 'video', callerName: 'Patient' })
 })
 
 mongoose.connect(process.env.MONGODB_URI)
