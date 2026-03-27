@@ -1,38 +1,23 @@
 require('dotenv').config()
-const mongoose = require('mongoose')
+const { Pool } = require('pg')
+const fs = require('fs')
+const path = require('path')
 
-mongoose.connect(process.env.MONGODB_URI).then(async () => {
-  const Doctor = require('./src/models/Doctor')
-  const Appointment = require('./src/models/Appointment')
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
-  const yourDoctor = await Doctor.findOne({ clerkId: 'user_3BNoXIb8JwCmRKvcGZrcZ8wN2Bo' })
-  const seededDoctor = await Doctor.findOne({ clerkId: 'user_3BNhCkg1qHbt6iyCqDsceLSCFcO' })
+async function runSchema() {
+  const client = await pool.connect()
+  try {
+    const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8')
+    await client.query(sql)
+    console.log('✅ Schema created successfully! Tables: doctors, patients, appointments, medicine_cart')
+  } catch (err) {
+    console.error('❌ Failed:', err.message)
+    process.exit(1)
+  } finally {
+    client.release()
+    await pool.end()
+  }
+}
 
-  console.log('Your doctor:', yourDoctor?._id, yourDoctor?.firstName)
-  console.log('Seeded doctor:', seededDoctor?._id, seededDoctor?.firstName)
-
-  const result = await Appointment.updateMany(
-    { doctor: seededDoctor._id },
-    { $set: { doctor: yourDoctor._id } }
-  )
-  console.log('Appointments moved:', result.modifiedCount)
-
-  await Doctor.findByIdAndUpdate(yourDoctor._id, {
-    $set: {
-      title: seededDoctor.title,
-      designation: seededDoctor.designation,
-      specialty: seededDoctor.specialty,
-      experience: seededDoctor.experience,
-      location: seededDoctor.location,
-      phone: seededDoctor.phone,
-      bio: seededDoctor.bio,
-      availability: seededDoctor.availability,
-    }
-  })
-  console.log('Profile updated.')
-
-  const count = await Appointment.countDocuments({ doctor: yourDoctor._id })
-  console.log('Total appointments now:', count)
-
-  process.exit(0)
-}).catch(err => { console.error(err); process.exit(1) })
+runSchema()

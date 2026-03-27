@@ -1,16 +1,14 @@
 const express = require('express')
 const router = express.Router()
+const pool = require('../db')
 const { requireAuth } = require('../middleware/auth')
 const { syncDoctor, getProfile, updateProfile, updateAvailability, getDashboardStats, getAllAppointments } = require('../controllers/doctorController')
-const Doctor = require('../models/Doctor')
-const Appointment = require('../models/Appointment')
 
-// Debug route - no auth, confirms DB is working
 router.get('/debug', async (req, res) => {
   try {
-    const doctors = await Doctor.find({}, 'clerkId firstName lastName specialty')
-    const apptCount = await Appointment.countDocuments()
-    res.json({ doctors, appointmentCount: apptCount })
+    const { rows: doctors } = await pool.query('SELECT clerk_id, first_name, last_name, specialty FROM doctors')
+    const { rows: cnt } = await pool.query('SELECT COUNT(*) AS cnt FROM appointments')
+    res.json({ doctors, appointmentCount: parseInt(cnt[0].cnt) })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -19,12 +17,13 @@ router.get('/debug', async (req, res) => {
 router.get('/list', async (req, res) => {
   try {
     const { specialty } = req.query
-    const filter = specialty
-      ? { specialty: { $regex: specialty, $options: 'i' } }
-      : {}
-    const doctors = await Doctor.find(filter, '-__v').sort({ createdAt: -1 })
-    res.json(doctors)
-  } catch (err) { res.status(500).json({ error: err.message }) }
+    const { rows } = specialty
+      ? await pool.query('SELECT * FROM doctors WHERE specialty ILIKE $1 ORDER BY created_at DESC', [`%${specialty}%`])
+      : await pool.query('SELECT * FROM doctors ORDER BY created_at DESC')
+    res.json(rows)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 router.post('/sync',        syncDoctor)
@@ -36,10 +35,12 @@ router.get('/appointments', requireAuth, getAllAppointments)
 
 router.get('/:id', async (req, res) => {
   try {
-    const doctor = await Doctor.findById(req.params.id, '-__v')
-    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
-    res.json(doctor)
-  } catch (err) { res.status(500).json({ error: err.message }) }
+    const { rows } = await pool.query('SELECT * FROM doctors WHERE id = $1', [req.params.id])
+    if (!rows.length) return res.status(404).json({ error: 'Doctor not found' })
+    res.json(rows[0])
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 })
 
 module.exports = router
