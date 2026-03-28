@@ -110,7 +110,7 @@ const StartConsultation = () => {
                   <div key={appt._id} className="flex items-center justify-between py-4">
                     <div className="flex items-center gap-4">
                       <div className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-sm shrink-0">
-                        {appt.patient.firstName[0]}{appt.patient.lastName[0]}
+                        {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">

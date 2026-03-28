@@ -11,7 +11,7 @@ const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignInUrl="/redirect" afterSignUpUrl="/redirect">
+      <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignInUrl="/redirect" afterSignUpUrl="/redirect" signInFallbackRedirectUrl="/redirect" signUpFallbackRedirectUrl="/redirect">
         <ThemeProvider>
           <App />
         </ThemeProvider>

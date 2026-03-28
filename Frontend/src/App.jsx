@@ -1,5 +1,23 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, AuthenticateWithRedirectCallback } from '@clerk/clerk-react'
+import { Component } from 'react'
+
+class ErrorBoundary extends Component {
+  state = { error: null }
+  static getDerivedStateFromError(error) { return { error } }
+  render() {
+    if (this.state.error) return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="bg-white rounded-2xl border border-red-200 p-8 max-w-lg w-full space-y-3">
+          <p className="font-bold text-red-600 text-lg">Something went wrong</p>
+          <pre className="text-xs text-gray-600 bg-gray-50 rounded-lg p-3 overflow-auto max-h-48">{this.state.error?.message}</pre>
+          <button onClick={() => { this.setState({ error: null }); window.location.href = '/' }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Go Home</button>
+        </div>
+      </div>
+    )
+    return this.props.children
+  }
+}
 import Landing from './components/pages/Landing'
 import Login from './components/pages/Login'
 import Signup from './components/pages/Signup'
@@ -13,6 +31,17 @@ import StartConsultation from './components/pages/StartConsultation'
 import FindDoctors from './components/pages/FindDoctors'
 import DoctorPublicProfile from './components/pages/DoctorPublicProfile'
 import RoleRedirect from './components/RoleRedirect'
+import PharmacyHome from './components/pages/PharmacyHome'
+import ProductListing from './components/pages/ProductListing'
+import ProductDetail from './components/pages/ProductDetail'
+import PharmacyCart from './components/pages/PharmacyCart'
+import MyOrders from './components/pages/MyOrders'
+import WishlistPage from './components/pages/WishlistPage'
+import AdminPanel from './components/pages/AdminPanel'
+import DirectCall from './components/pages/DirectCall'
+import AnswerCall from './components/pages/AnswerCall'
+import VideoCall from './components/pages/VideoCall'
+import Chat from './components/pages/Chat'
 
 const ProtectedRoute = ({ children }) => (
   <>
@@ -23,6 +52,7 @@ const ProtectedRoute = ({ children }) => (
 
 function App() {
   return (
+    <ErrorBoundary>
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
@@ -38,7 +68,19 @@ function App() {
       <Route path="/start-consultation" element={<ProtectedRoute><StartConsultation /></ProtectedRoute>} />
       <Route path="/find-doctors" element={<FindDoctors />} />
       <Route path="/doctor/:id" element={<DoctorPublicProfile />} />
+      <Route path="/pharmacy" element={<PharmacyHome />} />
+      <Route path="/pharmacy/products" element={<ProductListing />} />
+      <Route path="/pharmacy/product/:id" element={<ProductDetail />} />
+      <Route path="/pharmacy/cart" element={<PharmacyCart />} />
+      <Route path="/pharmacy/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+      <Route path="/pharmacy/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
+      <Route path="/pharmacy/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+      <Route path="/call/:doctorId" element={<ProtectedRoute><DirectCall /></ProtectedRoute>} />
+      <Route path="/answer/:roomId" element={<ProtectedRoute><AnswerCall /></ProtectedRoute>} />
+      <Route path="/video/:roomID" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
+      <Route path="/chat/:roomId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
     </Routes>
+    </ErrorBoundary>
   )
 }
 

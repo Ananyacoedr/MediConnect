@@ -2,22 +2,27 @@ const pool = require('../db')
 
 const syncDoctor = async (req, res) => {
   try {
-    const { clerkId, firstName, lastName, email } = req.body
-    // Find by clerkId first, then fall back to email (handles seeded doctors)
+    const { clerkId, firstName, lastName, email, profileImage } = req.body
     let { rows } = await pool.query('SELECT * FROM doctors WHERE clerk_id = $1', [clerkId])
     if (!rows.length && email) {
       const upd = await pool.query(
-        'UPDATE doctors SET clerk_id = $1, updated_at = NOW() WHERE email = $2 RETURNING *',
-        [clerkId, email]
+        'UPDATE doctors SET clerk_id = $1, first_name = $2, last_name = $3, profile_image = $4, updated_at = NOW() WHERE email = $5 RETURNING *',
+        [clerkId, firstName, lastName, profileImage || '', email]
       )
       rows = upd.rows
     }
     if (!rows.length) {
       const ins = await pool.query(
-        'INSERT INTO doctors (clerk_id, first_name, last_name, email) VALUES ($1,$2,$3,$4) RETURNING *',
-        [clerkId, firstName, lastName, email]
+        'INSERT INTO doctors (clerk_id, first_name, last_name, email, profile_image) VALUES ($1,$2,$3,$4,$5) RETURNING *',
+        [clerkId, firstName, lastName, email, profileImage || '']
       )
       rows = ins.rows
+    } else {
+      const upd = await pool.query(
+        'UPDATE doctors SET first_name = $1, last_name = $2, profile_image = COALESCE(NULLIF($3,\'\'), profile_image), updated_at = NOW() WHERE clerk_id = $4 RETURNING *',
+        [firstName, lastName, profileImage || '', clerkId]
+      )
+      rows = upd.rows
     }
     res.json(rows[0])
   } catch (err) {
@@ -38,19 +43,16 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const allowed = ['firstName','lastName','title','designation','specialty','experience','location','phone','bio','profileImage']
-    const fields = []
-    const values = []
-    let i = 1
     const colMap = {
       firstName: 'first_name', lastName: 'last_name', title: 'title',
       designation: 'designation', specialty: 'specialty', experience: 'experience',
       location: 'location', phone: 'phone', bio: 'bio', profileImage: 'profile_image',
     }
+    const fields = []
+    const values = []
+    let i = 1
     allowed.forEach(k => {
-      if (req.body[k] !== undefined) {
-        fields.push(`${colMap[k]} = $${i++}`)
-        values.push(req.body[k])
-      }
+      if (req.body[k] !== undefined) { fields.push(`${colMap[k]} = $${i++}`); values.push(req.body[k]) }
     })
     if (!fields.length) return res.status(400).json({ error: 'No fields to update' })
     values.push(req.auth.userId)

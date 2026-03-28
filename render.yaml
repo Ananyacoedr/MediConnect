@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: mediconnect-backend
+    env: node
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: DOCTOR_CLERK_ID
+        sync: false

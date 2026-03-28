@@ -100,7 +100,7 @@ const getDashboard = async (req, res) => {
 const bookAppointment = async (req, res) => {
   try {
     const { doctorId, date, time, reason, symptoms, consultationType } = req.body
-    const { rows: pRows } = await pool.query('SELECT id FROM patients WHERE clerk_id = $1', [req.auth.userId])
+    const { rows: pRows } = await pool.query('SELECT id, clerk_id FROM patients WHERE clerk_id = $1', [req.auth.userId])
     if (!pRows.length) return res.status(404).json({ error: 'Patient not found' })
 
     const { rows } = await pool.query(
@@ -109,8 +109,21 @@ const bookAppointment = async (req, res) => {
       [doctorId, pRows[0].id, date, time, reason || '', symptoms || '', consultationType || 'in-person']
     )
     const appt = rows[0]
-    const { rows: dRows } = await pool.query('SELECT first_name, last_name, specialty FROM doctors WHERE id = $1', [appt.doctor_id])
-    res.status(201).json({ ...appt, ...dRows[0] })
+    const { rows: dRows } = await pool.query('SELECT first_name, last_name, specialty, clerk_id, title FROM doctors WHERE id = $1', [appt.doctor_id])
+    const doc = dRows[0]
+
+    // Notify doctor via socket
+    const io = req.app.get('io')
+    const onlineUsers = req.app.get('onlineUsers')
+    const doctorSocketId = onlineUsers[doc?.clerk_id]
+    if (doctorSocketId) {
+      io.to(doctorSocketId).emit('new-booking', {
+        appointmentId: appt.id,
+        patientName: `${pRows[0].first_name || ''} ${pRows[0].last_name || ''}`.trim(),
+        date, time, reason, consultationType,
+      })
+    }
+    res.status(201).json({ ...appt, ...doc })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
