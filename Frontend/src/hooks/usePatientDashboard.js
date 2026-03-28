@@ -14,14 +14,15 @@ export const usePatientDashboard = () => {
     try {
       setLoading(true)
       setError(null)
-      const result = await apiFetch('/patients/dashboard', getToken)
+      // Use userId directly — works for both Gmail and email/password
+      const result = await apiFetch('/patients/dashboard', user.id)
       setData(result)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }, [user, isLoaded, getToken])
+  }, [user, isLoaded])
 
   useEffect(() => { load() }, [load])
 
