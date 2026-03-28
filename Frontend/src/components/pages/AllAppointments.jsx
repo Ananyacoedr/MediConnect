@@ -89,7 +89,7 @@ const AllAppointments = () => {
                 <div key={appt._id} className="flex items-center justify-between py-4 border-b last:border-0">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold shrink-0">
-                      {appt.doctor.firstName[0]}{appt.doctor.lastName[0]}
+                      {appt.doctor?.firstName?.[0]}{appt.doctor?.lastName?.[0]}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">

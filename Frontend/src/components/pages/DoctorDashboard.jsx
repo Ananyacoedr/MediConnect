@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
+import { io } from 'socket.io-client'
 import { apiFetch } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -8,17 +9,16 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useSyncUser } from '@/hooks/useSyncUser'
 import { useAvailability } from '@/hooks/useAvailability'
-import { useWebRTC } from '@/hooks/useWebRTC'
-import AnswerCall from '@/components/pages/AnswerCall'
+
 import ThemeToggle from '@/components/ThemeToggle'
 import { ProfileSection } from '@/components/pages/DoctorProfile'
 import {
   HeartPulse, CalendarDays, Users, BookCheck, Clock,
   ChevronRight, Loader2,
   LayoutDashboard, UserCircle, CalendarCheck, LogOut,
-  Video, Phone, Mic, MessageSquare, PhoneOff, MicOff, VideoOff, Send,
+  Video, Phone, Mic, Copy, Check,
   CheckCircle2, CalendarClock,
-  DollarSign, ClipboardList, Stethoscope, History, PhoneIncoming
+  DollarSign, ClipboardList, Stethoscope, History, Search, Bell, X
 } from 'lucide-react'
 const statusStyle = {
   Confirmed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
@@ -46,282 +46,140 @@ const SectionTitle = ({ children }) => (
 const inputCls = 'border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
 
 // ── Consultations Section ──────────────────────────────────────────────────
-const ConsultationsSection = ({ appointments, navigate }) => {
+const ConsultationsSection = ({ navigate }) => {
   const { getToken } = useAuth()
-  const [activeCall, setActiveCall] = useState(null) // 'video' | 'audio' | 'chat' | null
-  const [micMuted, setMicMuted]     = useState(false)
-  const [camOff, setCamOff]         = useState(false)
-  const [chatMessages, setChatMessages] = useState([])
-  const [chatInput, setChatInput]   = useState('')
-  const [allConfirmed, setAllConfirmed] = useState([])
-  const [loadingAppts, setLoadingAppts] = useState(true)
-  const localVideoRef  = useRef(null)
-  const localStreamRef = useRef(null)
-  const chatEndRef     = useRef(null)
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [search, setSearch]             = useState('')
+  const [filter, setFilter]             = useState('All')
 
   useEffect(() => {
-    apiFetch('/appointments/confirmed', getToken)
-      .then(data => setAllConfirmed(data))
-      .catch(() => setAllConfirmed(appointments?.filter(a => a.status === 'Confirmed') || []))
-      .finally(() => setLoadingAppts(false))
+    apiFetch('/doctors/appointments', getToken)
+      .then(setAppointments)
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [getToken])
 
-  const confirmed = allConfirmed.length > 0 ? allConfirmed : (appointments?.filter(a => a.status === 'Confirmed') || [])
+  const filtered = appointments.filter(a => {
+    const name = `${a.patient?.firstName} ${a.patient?.lastName}`.toLowerCase()
+    const matchSearch = name.includes(search.toLowerCase())
+    const matchFilter = filter === 'All' || a.status === filter
+    return matchSearch && matchFilter
+  })
 
-  useEffect(() => {
-    if (!activeCall) return
-    let cancelled = false
-    navigator.mediaDevices.getUserMedia(
-      activeCall === 'video' ? { video: true, audio: true } : { audio: true, video: false }
-    ).then(stream => {
-      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return }
-      localStreamRef.current = stream
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream
-    }).catch(err => console.error('Media error:', err))
-    return () => { cancelled = true }
-  }, [activeCall])
+  const PatientCard = ({ appt }) => {
+    const [copied, setCopied] = useState(false)
+    const [showLink, setShowLink] = useState(false)
+    const roomURL = `${window.location.origin}/video/${appt._id}`
+    const copyLink = () => {
+      navigator.clipboard.writeText(roomURL)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    }
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          {appt.patient?.profileImage
+            ? <img src={appt.patient.profileImage} className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 shrink-0" alt="patient" />
+            : <div className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold shrink-0">
+                {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
+              </div>
+          }
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+              {appt.patient?.firstName} {appt.patient?.lastName}
+            </p>
+            <p className="text-xs text-gray-400">
+              {new Date(appt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {appt.time}
+            </p>
+            <p className="text-xs text-gray-400 capitalize">{appt.consultationType} · {appt.reason || 'General consultation'}</p>
+          </div>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${statusStyle[appt.status]}`}>{appt.status}</span>
+        </div>
 
-  useEffect(() => () => { localStreamRef.current?.getTracks().forEach(t => t.stop()) }, [])
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowLink(l => !l)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <Video size={13} /> Video Call
+          </button>
+          <button
+            onClick={() => navigate(`/consultation/${appt._id}`)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <Stethoscope size={13} /> Consultation Panel
+          </button>
+        </div>
 
-  const endCall = () => {
-    localStreamRef.current?.getTracks().forEach(t => t.stop())
-    localStreamRef.current = null
-    if (localVideoRef.current) localVideoRef.current.srcObject = null
-    setActiveCall(null)
-    setMicMuted(false)
-    setCamOff(false)
-    setChatMessages([])
-    setChatInput('')
-  }
-
-  const sendChat = () => {
-    if (!chatInput.trim()) return
-    setChatMessages(m => [...m, { text: chatInput.trim(), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }])
-    setChatInput('')
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-  }
-
-  const toggleMic = () => {
-    localStreamRef.current?.getAudioTracks().forEach(t => { t.enabled = !t.enabled })
-    setMicMuted(m => !m)
-  }
-  const toggleCam = () => {
-    localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = !t.enabled })
-    setCamOff(c => !c)
+        {showLink && (
+          <div className="bg-indigo-50 dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 rounded-xl p-3 space-y-2">
+            <p className="text-xs text-indigo-600 dark:text-indigo-300 font-medium">Share this link with your patient:</p>
+            <p className="text-xs text-indigo-800 dark:text-indigo-200 font-mono break-all">{roomURL}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={copyLink}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                  copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-700 border border-indigo-300 text-indigo-600 hover:bg-indigo-50'
+                }`}
+              >
+                {copied ? '✓ Copied!' : 'Copy Link'}
+              </button>
+              <a
+                href={roomURL}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-center"
+              >
+                Join Now
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
       <SectionTitle>Consultations</SectionTitle>
 
-      {/* ── Call Buttons ── */}
-      <Card>
-        <CardHeader><CardTitle>Start a Call</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <button
-              onClick={() => activeCall === 'video' ? endCall() : (endCall(), setTimeout(() => setActiveCall('video'), 50))}
-              className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-xl text-base font-semibold transition-all ${
-                activeCall === 'video' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
-            >
-              <Video size={22} />
-              {activeCall === 'video' ? 'End Video Call' : 'Video Call'}
-            </button>
-            <button
-              onClick={() => activeCall === 'audio' ? endCall() : (endCall(), setTimeout(() => setActiveCall('audio'), 50))}
-              className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-xl text-base font-semibold transition-all ${
-                activeCall === 'audio' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'
-              }`}
-            >
-              <Phone size={22} />
-              {activeCall === 'audio' ? 'End Audio Call' : 'Audio Call'}
-            </button>
-            <button
-              onClick={() => activeCall === 'chat' ? endCall() : (endCall(), setTimeout(() => setActiveCall('chat'), 50))}
-              className={`flex-1 flex items-center justify-center gap-3 py-5 rounded-xl text-base font-semibold transition-all ${
-                activeCall === 'chat' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-purple-500 hover:bg-purple-600 text-white'
-              }`}
-            >
-              <MessageSquare size={22} />
-              {activeCall === 'chat' ? 'Close Chat' : 'Chat'}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search + Filter */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search patient..."
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+        <div className="flex gap-2">
+          {['All', 'Confirmed', 'Pending'].map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-3 py-2 text-xs font-medium rounded-xl border transition-colors ${
+                filter === f ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-blue-400'
+              }`}>{f}</button>
+          ))}
+        </div>
+      </div>
 
-      {/* ── Video Call Panel ── */}
-      {activeCall === 'video' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Video Call Active
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 overflow-hidden rounded-b-xl">
-            <div className="bg-gray-900 relative" style={{ height: 360 }}>
-              {/* Remote video */}
-              <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                  <Video size={48} strokeWidth={1} />
-                  <p className="text-sm mt-2">Waiting for patient to join...</p>
-                </div>
-              </div>
-              {/* Local video */}
-              <div className="absolute bottom-4 right-4 w-44 h-32 bg-gray-700 rounded-lg overflow-hidden border-2 border-white shadow-lg">
-                <video ref={localVideoRef} autoPlay muted playsInline
-                  className={`w-full h-full object-cover ${camOff ? 'opacity-0' : ''}`} />
-                {camOff && (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                    <VideoOff size={20} />
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Controls */}
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-800">
-              <span className="text-xs text-green-400 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> Live
-              </span>
-              <div className="flex gap-2">
-                <button onClick={toggleMic}
-                  className={`p-2 rounded-full transition-colors ${micMuted ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}>
-                  <MicOff size={15} />
-                </button>
-                <button onClick={toggleCam}
-                  className={`p-2 rounded-full transition-colors ${camOff ? 'bg-red-600 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}>
-                  <VideoOff size={15} />
-                </button>
-                <button onClick={endCall}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-full font-medium">
-                  <PhoneOff size={14} /> End
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Patient Cards */}
+      {loading ? (
+        <div className="flex items-center gap-2 text-gray-400 py-10 justify-center">
+          <Loader2 size={18} className="animate-spin" /> Loading...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center py-12 text-gray-400 gap-2">
+          <Users size={36} strokeWidth={1} />
+          <p className="text-sm">No patients found.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map(appt => <PatientCard key={appt._id} appt={appt} />)}
+        </div>
       )}
-
-      {/* ── Audio Call Panel ── */}
-      {activeCall === 'audio' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" /> Audio Call Active
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-green-50 dark:bg-green-950 rounded-xl py-10 flex flex-col items-center gap-5">
-              <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                <Phone size={40} className="text-green-600 dark:text-green-300" strokeWidth={1.5} />
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-semibold text-green-800 dark:text-green-200">Audio Call in Progress</p>
-                <p className="text-sm text-green-600 dark:text-green-400 mt-1">Waiting for patient to connect...</p>
-              </div>
-              <div className="flex items-end gap-1.5" style={{ height: 48 }}>
-                {[4,7,5,9,6,8,4,7,5,9,6,8,4].map((h, i) => (
-                  <span key={i} style={{ height: h * 5, animationDelay: `${i * 100}ms` }}
-                    className={`w-2 rounded-full animate-pulse ${micMuted ? 'bg-gray-400' : 'bg-green-500'}`} />
-                ))}
-              </div>
-              <div className="flex gap-3">
-                <button onClick={toggleMic}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border transition-colors ${
-                    micMuted ? 'bg-red-100 text-red-600 border-red-300' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300'
-                  }`}>
-                  <MicOff size={15} /> {micMuted ? 'Unmute' : 'Mute'}
-                </button>
-                <button onClick={endCall}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium">
-                  <PhoneOff size={15} /> End Call
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Chat Panel ── */}
-      {activeCall === 'chat' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse" /> Chat
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="flex flex-col" style={{ height: 360 }}>
-              <div className="flex-1 overflow-y-auto px-4 py-3 bg-white dark:bg-gray-800 flex flex-col gap-2">
-                {chatMessages.length === 0 && (
-                  <p className="text-xs text-gray-400 text-center mt-8">No messages yet. Start the conversation.</p>
-                )}
-                {chatMessages.map((msg, i) => (
-                  <div key={i} className="flex justify-end">
-                    <div className="max-w-xs px-3 py-2 rounded-2xl rounded-br-sm bg-blue-600 text-white text-sm">
-                      <p>{msg.text}</p>
-                      <p className="text-[10px] mt-0.5 text-blue-200">{msg.time}</p>
-                    </div>
-                  </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
-              <div className="flex gap-2 px-3 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                <input
-                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Type a message…"
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && sendChat()}
-                />
-                <button onClick={sendChat}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-1 text-sm font-medium shrink-0">
-                  <Send size={14} />
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Confirmed Appointments List ── */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Confirmed Appointments</CardTitle>
-            <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
-              {confirmed.length} confirmed
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loadingAppts ? (
-            <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={15} className="animate-spin" /> Loading...</div>
-          ) : confirmed.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4">No confirmed appointments found.</p>
-          ) : (
-            confirmed.map(appt => (
-              <div key={appt._id} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold">
-                    {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {appt.patient?.firstName} {appt.patient?.lastName}
-                    </p>
-                    <p className="text-xs text-gray-400">{appt.time} · {appt.reason || 'General consultation'}</p>
-                  </div>
-                </div>
-                <button onClick={() => navigate(`/consultation/${appt._id}`)}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 hover:bg-blue-100">
-                  Full Panel
-                </button>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }
@@ -365,7 +223,7 @@ const PreviousConsultationsSection = ({ getToken }) => {
                 <div key={c._id} className="flex items-center justify-between py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold shrink-0">
-                      {c.patient.firstName[0]}{c.patient.lastName[0]}
+                      {c.patient?.firstName?.[0]}{c.patient?.lastName?.[0]}
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -773,6 +631,8 @@ const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) =>
   )
 }
 
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'
+
 // ── Main Dashboard ─────────────────────────────────────────────────────────
 const DoctorDashboard = () => {
   const { user } = useUser()
@@ -781,18 +641,45 @@ const DoctorDashboard = () => {
   const navigate = useNavigate()
   const { data, loading, error, updateAppointmentStatus } = useDashboard()
   const [active, setActive] = useState('overview')
-  const [inCallMode, setInCallMode] = useState(false)
+  const [newBookings, setNewBookings] = useState([]) // real-time incoming bookings
   const pollRef = useRef(null)
+  const socketRef = useRef(null)
   useSyncUser()
 
-  const doctor = data?.doctor
+  // Register doctor with socket for real-time notifications
+  useEffect(() => {
+    if (!user?.id) return
+    console.log('[Doctor] Connecting socket with userId:', user.id)
+    const socket = io(SOCKET_URL, { transports: ['websocket'] })
+    socketRef.current = socket
+    socket.on('connect', () => {
+      console.log('[Doctor] Socket connected:', socket.id)
+      socket.emit('register', user.id)
+    })
+    socket.on('new-booking', (booking) => {
+      console.log('[Doctor] New booking received:', booking)
+      setNewBookings(prev => [...prev, booking])
+    })
+    socket.on('connect_error', (err) => console.log('[Doctor] Socket error:', err.message))
+    return () => socket.disconnect()
+  }, [user?.id])
 
-  const { incomingCall, acceptCall, rejectCall } = useWebRTC(user?.id)
+  const dismissBooking = (appointmentId) =>
+    setNewBookings(prev => prev.filter(b => b.appointmentId !== appointmentId))
 
-  const acceptAndShow = async () => {
-    await acceptCall()
-    setInCallMode(true)
+  const handleAccept = async (booking) => {
+    await updateAppointmentStatus(booking.appointmentId, 'Confirmed')
+    dismissBooking(booking.appointmentId)
+    // Auto join the video call room
+    navigate(`/video/${booking.appointmentId}`)
   }
+
+  const handleDecline = async (booking) => {
+    await updateAppointmentStatus(booking.appointmentId, 'Cancelled')
+    dismissBooking(booking.appointmentId)
+  }
+
+  const doctor = data?.doctor
 
   const stats = [
     { icon: Users,        label: 'Total Patients',         value: data?.stats?.totalPatients,                                    color: 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300'     },
@@ -977,7 +864,7 @@ const DoctorDashboard = () => {
                         <div key={appt._id} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 text-xs font-bold">
-                              {appt.patient.firstName[0]}{appt.patient.lastName[0]}
+                              {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient.firstName} {appt.patient.lastName}</p>
@@ -1029,7 +916,7 @@ const DoctorDashboard = () => {
 
           {/* CONSULTATIONS */}
           {active === 'consultations' && (
-            <ConsultationsSection appointments={data?.todayAppointments ?? []} navigate={navigate} />
+            <ConsultationsSection navigate={navigate} />
           )}
 
           {/* PREVIOUS CONSULTATIONS */}
@@ -1043,36 +930,41 @@ const DoctorDashboard = () => {
         </main>
       </div>
 
-      {/* Incoming call notification */}
-      {incomingCall && !inCallMode && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-80 text-center space-y-5">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto animate-bounce">
-              <PhoneIncoming size={32} className="text-green-600" />
+      {/* ── Real-time Incoming Booking Notifications ── */}
+      {newBookings.map((booking, i) => (
+        <div key={booking.appointmentId}
+          style={{ bottom: `${1.25 + i * 9}rem` }}
+          className="fixed right-5 z-[60] bg-white border-2 border-blue-400 rounded-2xl shadow-2xl p-4 w-80 space-y-3"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Bell size={18} className="text-blue-500 shrink-0" />
+              <div>
+                <p className="font-semibold text-gray-900 text-sm">New Booking Request!</p>
+                <p className="text-xs text-gray-600 mt-0.5">{booking.patientName}</p>
+                <p className="text-xs text-gray-400">{new Date(booking.date).toLocaleDateString()} · {booking.time}</p>
+                <p className="text-xs text-blue-600 capitalize">{booking.consultationType}</p>
+                {booking.reason && <p className="text-xs text-gray-400 mt-0.5">Reason: {booking.reason}</p>}
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-gray-900 text-lg">Incoming Call</p>
-              <p className="text-gray-500 text-sm mt-1">{incomingCall.fromName} is calling you</p>
-              <span className="inline-block mt-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full capitalize">{incomingCall.type} call</span>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={rejectCall} className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
-                <PhoneOff size={16} /> Decline
-              </button>
-              <button onClick={acceptAndShow} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
-                <Phone size={16} /> Accept
-              </button>
-            </div>
+            <button onClick={() => dismissBooking(booking.appointmentId)} className="text-gray-400 hover:text-gray-600 shrink-0"><X size={15} /></button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleDecline(booking)}
+              className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-xl"
+            >
+              Decline
+            </button>
+            <button
+              onClick={() => handleAccept(booking)}
+              className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1"
+            >
+              <Video size={13} /> Accept & Join
+            </button>
           </div>
         </div>
-      )}
-
-      {/* Full screen call UI */}
-      {inCallMode && (
-        <div className="fixed inset-0 z-50">
-          <AnswerCall incomingCall={incomingCall} onEnd={() => setInCallMode(false)} />
-        </div>
-      )}
+      ))}
     </div>
   )
 }

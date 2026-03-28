@@ -43,6 +43,7 @@ import DirectCall from './components/pages/DirectCall'
 import AnswerCall from './components/pages/AnswerCall'
 import PatientConsultation from './components/pages/PatientConsultation'
 import VideoCall from './components/pages/VideoCall'
+import Chat from './components/pages/Chat'
 
 const Spinner = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -96,6 +97,7 @@ function App() {
         <Route path="/call/:doctorId" element={<ProtectedRoute><DirectCall /></ProtectedRoute>} />
         <Route path="/answer/:roomId" element={<ProtectedRoute><AnswerCall /></ProtectedRoute>} />
         <Route path="/video/:roomID" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
+        <Route path="/chat/:roomId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       </Routes>
     </ErrorBoundary>
   )

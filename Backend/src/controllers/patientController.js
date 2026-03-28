@@ -99,7 +99,29 @@ const bookAppointment = async (req, res) => {
       consultationType: consultationType || 'in-person',
       status: 'Pending',
     })
-    const populated = await appointment.populate('doctor', 'firstName lastName specialty')
+    const populated = await appointment.populate([
+      { path: 'doctor', select: 'firstName lastName specialty clerkId title' },
+      { path: 'patient', select: 'firstName lastName' },
+    ])
+
+    // Notify doctor via socket
+    const io = req.app.get('io')
+    const onlineUsers = req.app.get('onlineUsers')
+    const doctorSocketId = onlineUsers[populated.doctor.clerkId]
+    console.log(`[Booking] Doctor clerkId: ${populated.doctor.clerkId}`)
+    console.log(`[Booking] Online users:`, Object.keys(onlineUsers))
+    console.log(`[Booking] Doctor socket:`, doctorSocketId)
+    if (doctorSocketId) {
+      io.to(doctorSocketId).emit('new-booking', {
+        appointmentId: populated._id,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        date, time, reason, consultationType,
+      })
+      console.log(`[Booking] Notification sent to doctor`)
+    } else {
+      console.log(`[Booking] Doctor NOT online - no notification sent`)
+    }
+
     res.status(201).json(populated)
   } catch (err) {
     res.status(500).json({ error: err.message })
