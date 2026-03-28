@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { SignedIn, SignedOut, AuthenticateWithRedirectCallback } from '@clerk/clerk-react'
+import { AuthenticateWithRedirectCallback, useAuth } from '@clerk/clerk-react'
 import { Component } from 'react'
 
 class ErrorBoundary extends Component {
@@ -43,12 +43,16 @@ import AnswerCall from './components/pages/AnswerCall'
 import PatientConsultation from './components/pages/PatientConsultation'
 import VideoCall from './components/pages/VideoCall'
 
-const ProtectedRoute = ({ children }) => (
-  <>
-    <SignedIn>{children}</SignedIn>
-    <SignedOut><Navigate to="/login" replace /></SignedOut>
-  </>
-)
+const ProtectedRoute = ({ children }) => {
+  const { isLoaded, isSignedIn } = useAuth()
+  if (!isLoaded) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+  if (!isSignedIn) return <Navigate to="/login" replace />
+  return children
+}
 
 function App() {
   return (
