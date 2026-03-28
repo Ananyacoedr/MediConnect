@@ -1,6 +1,7 @@
 import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { io } from 'socket.io-client'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { usePatientDashboard } from '@/hooks/usePatientDashboard'
@@ -9,8 +10,11 @@ import { apiFetch } from '@/lib/api'
 import {
   HeartPulse, Search, CalendarPlus, Video, FileText,
   Pill, Truck, Bell, History, CalendarDays, CheckCircle,
-  Clock, ChevronRight, Loader2, Camera, UserCircle, X, MapPin
+  Clock, ChevronRight, Loader2, Camera, UserCircle, X, MapPin,
+  Stethoscope, Copy, MessageSquare
 } from 'lucide-react'
+
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'
 
 const TIMES = ['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
   '12:00 PM','12:30 PM','02:00 PM','02:30 PM','03:00 PM','03:30 PM','04:00 PM','04:30 PM']
@@ -72,14 +76,15 @@ const AppointmentPanel = ({ title, appointments, onClose }) => (
 )
 
 const quickActions = [
-  { icon: Search,       label: 'Find Doctors',      color: 'bg-blue-50 text-blue-600'    },
-  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600'  },
+  { icon: Search,       label: 'Find My Doctors',   color: 'bg-indigo-50 text-indigo-600'},
   { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 text-purple-600'},
   { icon: FileText,     label: 'Upload Reports',    color: 'bg-orange-50 text-orange-600'},
   { icon: Pill,         label: 'My Prescriptions',  color: 'bg-pink-50 text-pink-600'    },
   { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 text-teal-600'    },
   { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 text-yellow-600'},
   { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600'   },
+  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600'  },
+  { icon: MessageSquare,label: 'Chat',              color: 'bg-blue-50 text-blue-600'    },
 ]
 
 const HistoryModal = ({ onClose }) => {
@@ -233,24 +238,32 @@ const JoinConsultationModal = ({ onClose, navigate }) => {
             </div>
           )}
           {!loading && appointments.map(appt => (
-            <div key={appt._id} className="border rounded-xl p-4 flex items-center justify-between gap-3">
+            <div key={appt._id} className="border rounded-xl p-4 space-y-3">
               <div className="flex items-center gap-3">
                 {appt.doctor?.profileImage
                   ? <img src={appt.doctor.profileImage} className="w-10 h-10 rounded-full object-cover border" alt="doc" />
                   : <div className="w-10 h-10 rounded-full bg-purple-50 border flex items-center justify-center"><UserCircle size={22} className="text-purple-300" /></div>
                 }
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
                   <p className="text-xs text-gray-400">{new Date(appt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {appt.time}</p>
                   <p className="text-xs text-purple-600 capitalize">{appt.consultationType}</p>
                 </div>
               </div>
-              <button
-                onClick={() => { onClose(); navigate(`/consultation/${appt._id}`) }}
-                className="shrink-0 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 font-medium"
-              >
-                Join
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { onClose(); navigate(`/video/${appt._id}`) }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 font-medium"
+                >
+                  <Video size={13} /> Video Call
+                </button>
+                <button
+                  onClick={() => { onClose(); navigate(`/consultation/${appt._id}`) }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Join Consultation
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -398,7 +411,7 @@ const BookingModal = ({ onClose, onBooked }) => {
   const [form, setForm] = useState(defaultForm)
   const [booking, setBooking] = useState(false)
   const [bookError, setBookError] = useState(null)
-  const [success, setSuccess] = useState(false)
+  const [bookedAppt, setBookedAppt] = useState(null)
 
   useEffect(() => {
     apiFetch('/doctors/list', null)
@@ -412,7 +425,7 @@ const BookingModal = ({ onClose, onBooked }) => {
     setBooking(true)
     setBookError(null)
     try {
-      await apiFetch('/patients/appointments/book', getToken, {
+      const appt = await apiFetch('/patients/appointments/book', getToken, {
         method: 'POST',
         body: JSON.stringify({
           doctorId: form.doctorId,
@@ -423,13 +436,21 @@ const BookingModal = ({ onClose, onBooked }) => {
           consultationType: form.consultationType,
         }),
       })
-      setSuccess(true)
+      setBookedAppt(appt)
       onBooked()
     } catch (err) {
       setBookError(err.message)
     } finally {
       setBooking(false)
     }
+  }
+
+  const roomLink = bookedAppt ? `${window.location.origin}/video/${bookedAppt._id}` : null
+  const [copied, setCopied] = useState(false)
+  const copyLink = () => {
+    navigator.clipboard.writeText(roomLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -440,12 +461,46 @@ const BookingModal = ({ onClose, onBooked }) => {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
 
-        {success ? (
-          <div className="px-6 py-10 text-center space-y-3">
-            <div className="text-green-500 text-4xl">✓</div>
-            <p className="font-semibold text-gray-900">Appointment Booked!</p>
-            <p className="text-sm text-gray-500">Your request has been sent. You'll be notified once confirmed.</p>
-            <button onClick={onClose} className="mt-2 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">Done</button>
+        {bookedAppt ? (
+          <div className="px-6 py-8 space-y-4">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                <CheckCircle size={28} className="text-green-500" />
+              </div>
+              <p className="font-semibold text-gray-900">Appointment Booked!</p>
+              <p className="text-sm text-gray-500">Your request has been sent. You'll be notified once confirmed.</p>
+            </div>
+
+            {(form.consultationType === 'video' || form.consultationType === 'audio') && roomLink && (
+              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-semibold text-purple-700 flex items-center gap-1.5">
+                  <Video size={13} /> Video Call Room Link
+                </p>
+                <p className="text-xs text-purple-800 font-mono break-all">{roomLink}</p>
+                <p className="text-xs text-gray-500">Share this link with your doctor so you can both join the call instantly.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={copyLink}
+                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
+                      copied ? 'bg-green-500 text-white' : 'bg-white border border-purple-300 text-purple-600 hover:bg-purple-50'
+                    }`}
+                  >
+                    {copied ? '✓ Copied!' : 'Copy Link'}
+                  </button>
+                  <a
+                    href={roomLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={onClose}
+                    className="flex-1 py-2 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-center"
+                  >
+                    Join Now
+                  </a>
+                </div>
+              </div>
+            )}
+
+            <button onClick={onClose} className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Done</button>
           </div>
         ) : (
           <form onSubmit={handleBook} className="px-6 py-5 space-y-4">
@@ -463,7 +518,7 @@ const BookingModal = ({ onClose, onBooked }) => {
                   <option value="">Choose a doctor</option>
                   {doctors.map(d => (
                     <option key={d._id} value={d._id}>
-                      {d.title} {d.firstName} {d.lastName} — {d.specialty}
+                      {d.title} {d.firstName} {d.lastName}{d.specialty ? ` — ${d.specialty}` : ''}
                     </option>
                   ))}
                 </select>
@@ -584,6 +639,360 @@ const playAlarm = () => {
   beep(1100, 0.8, 0.4)
 }
 
+const DoctorBookingModal = ({ doctor, userId, onClose }) => {
+  const TIMES_LIST = ['09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
+    '12:00 PM','12:30 PM','02:00 PM','02:30 PM','03:00 PM','03:30 PM','04:00 PM','04:30 PM']
+  const [step, setStep]     = useState(1)
+  const [form, setForm]     = useState({ date: '', time: '', reason: '', symptoms: '', consultationType: 'video' })
+  const [booking, setBooking] = useState(false)
+  const [error, setError]   = useState(null)
+  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const handleBook = async () => {
+    setBooking(true); setError(null)
+    try {
+      await apiFetch('/patients/appointments/book', userId, {
+        method: 'POST',
+        body: JSON.stringify({ doctorId: doctor._id, ...form }),
+      })
+      setStep(3)
+    } catch (err) { setError(err.message) }
+    finally { setBooking(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="flex items-center gap-3">
+            {doctor.profileImage
+              ? <img src={doctor.profileImage} className="w-9 h-9 rounded-full object-cover border" alt="doc" />
+              : <div className="w-9 h-9 rounded-full bg-blue-50 border flex items-center justify-center text-blue-500 font-bold text-sm">{doctor.firstName?.[0]}{doctor.lastName?.[0]}</div>
+            }
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{doctor.title} {doctor.firstName} {doctor.lastName}</p>
+              <p className="text-xs text-blue-600">{doctor.specialty}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+        </div>
+
+        {step === 1 && (
+          <div className="px-6 py-5 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Date *</label>
+                <input type="date" min={new Date().toISOString().split('T')[0]}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value={form.date} onChange={set('date')} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Time *</label>
+                <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value={form.time} onChange={set('time')}>
+                  <option value="">Select time</option>
+                  {TIMES_LIST.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Consultation Type</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[{v:'video',label:'Video'},{v:'audio',label:'Audio'},{v:'in-person',label:'In-Person'}].map(({v,label}) => (
+                  <button key={v} type="button" onClick={() => setForm(f => ({...f, consultationType: v}))}
+                    className={`py-2 rounded-xl border text-xs font-medium transition-colors ${
+                      form.consultationType === v ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-500 hover:border-blue-300'
+                    }`}>{label}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Reason</label>
+              <input type="text" placeholder="e.g. Routine checkup"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={form.reason} onChange={set('reason')} />
+            </div>
+            {error && <p className="text-red-500 text-xs">{error}</p>}
+            <div className="flex gap-3">
+              <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => { if (!form.date || !form.time) return setError('Select date and time.'); setError(null); setStep(2) }}
+                className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Next →</button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="px-6 py-5 space-y-4">
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-gray-500">Doctor</span><span className="font-medium">{doctor.title} {doctor.firstName} {doctor.lastName}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Date</span><span className="font-medium">{new Date(form.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Time</span><span className="font-medium">{form.time}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Type</span><span className="font-medium capitalize">{form.consultationType}</span></div>
+            </div>
+            {error && <p className="text-red-500 text-xs">{error}</p>}
+            <div className="flex gap-3">
+              <button onClick={() => setStep(1)} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">← Back</button>
+              <button onClick={handleBook} disabled={booking}
+                className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-60 flex items-center justify-center gap-2">
+                {booking ? <><Loader2 size={14} className="animate-spin" /> Booking...</> : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="px-6 py-10 text-center space-y-3">
+            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+              <CheckCircle size={28} className="text-green-500" />
+            </div>
+            <p className="font-semibold text-gray-900">Appointment Booked!</p>
+            <p className="text-sm text-gray-500">Request sent to {doctor.firstName} {doctor.lastName}.</p>
+            <button onClick={onClose} className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Done</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const FindMyDoctorsModal = ({ onClose, navigate }) => {
+  const { userId } = useAuth()
+  const [doctors, setDoctors]     = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [search, setSearch]       = useState('')
+  const [specialty, setSpecialty] = useState('All')
+  const [booking, setBooking]     = useState(null)
+
+  const fetchDoctors = (q = '', spec = '') => {
+    setLoading(true)
+    const params = new URLSearchParams()
+    if (q) params.set('search', q)
+    if (spec && spec !== 'All') params.set('specialty', spec)
+    apiFetch(`/doctors/list?${params}`, null)
+      .then(setDoctors)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { fetchDoctors() }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => fetchDoctors(search, specialty), 300)
+    return () => clearTimeout(t)
+  }, [search, specialty])
+
+  const dbSpecialties = ['All', ...Array.from(new Set(doctors.map(d => d.specialty).filter(Boolean))).sort()]
+
+  const grouped = doctors.reduce((acc, doc) => {
+    const key = doc.specialty || 'General'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(doc)
+    return acc
+  }, {})
+  const specialtyKeys = Object.keys(grouped).sort()
+
+  const DoctorCard = ({ doc }) => {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow p-4">
+        <div className="flex items-start gap-3 cursor-pointer" onClick={() => { onClose(); navigate(`/doctor/${doc._id}`) }}>
+          {doc.profileImage
+            ? <img src={doc.profileImage} alt="doctor" className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 shrink-0" />
+            : <div className="w-11 h-11 rounded-full bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-sm shrink-0">
+                {doc.firstName?.[0]}{doc.lastName?.[0]}
+              </div>
+          }
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">{doc.title} {doc.firstName} {doc.lastName}</p>
+            <p className="text-xs text-blue-600">{doc.specialty}</p>
+            {doc.experience > 0 && <p className="text-xs text-gray-400 mt-0.5">{doc.experience} yrs experience</p>}
+          </div>
+        </div>
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={() => setBooking(doc)}
+            className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <CalendarPlus size={12} /> Book
+          </button>
+          <button
+            onClick={() => { onClose(); navigate(`/video/room_${doc._id}`) }}
+            className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            <Video size={12} /> Video Call
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-50 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-white rounded-t-2xl">
+          <div className="flex items-center gap-2">
+            <Stethoscope size={18} className="text-blue-600" />
+            <p className="font-semibold text-gray-900">Find My Doctors</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        </div>
+
+        {/* Search + filter */}
+        <div className="px-6 pt-4 pb-3 bg-white border-b space-y-3">
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name or specialty..."
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {dbSpecialties.map(s => (
+              <button key={s} onClick={() => setSpecialty(s)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  specialty === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400'
+                }`}>{s}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Doctor list */}
+        <div className="overflow-y-auto flex-1 px-6 py-4">
+          {loading ? (
+            <div className="flex items-center gap-2 text-gray-400 py-12 justify-center">
+              <Loader2 size={18} className="animate-spin" /> Loading doctors...
+            </div>
+          ) : doctors.length === 0 ? (
+            <div className="flex flex-col items-center py-12 text-gray-400 gap-2">
+              <Stethoscope size={36} strokeWidth={1} />
+              <p className="text-sm">No doctors found.</p>
+            </div>
+          ) : specialty !== 'All' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {doctors.map(doc => <DoctorCard key={doc._id} doc={doc} />)}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {specialtyKeys.map(spec => (
+                <div key={spec}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Stethoscope size={14} className="text-blue-600" />
+                    <p className="text-sm font-bold text-gray-800">{spec}</p>
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{grouped[spec].length}</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {grouped[spec].map(doc => <DoctorCard key={doc._id} doc={doc} />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Inline booking modal */}
+      {booking && (
+        <DoctorBookingModal
+          doctor={booking}
+          userId={userId}
+          onClose={() => setBooking(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+const ChatStartModal = ({ onClose, navigate, user }) => {
+  const [friendName, setFriendName] = useState('')
+  const [friendEmail, setFriendEmail] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const roomId = `chat_${user?.id?.slice(-8) || Math.random().toString(36).slice(2, 8)}`
+  const myName = user?.firstName || 'Me'
+  const chatLink = `${window.location.origin}/chat/${roomId}?name=${encodeURIComponent(friendName || 'Friend')}`
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(chatLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const startChat = () => {
+    onClose()
+    navigate(`/chat/${roomId}?name=${encodeURIComponent(myName)}`)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="flex items-center gap-2">
+            <MessageSquare size={18} className="text-blue-600" />
+            <p className="font-semibold text-gray-900">Start a Chat</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-gray-500">Enter your friend's details, share the link, and start chatting instantly.</p>
+
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">Friend's Name *</label>
+            <input
+              type="text"
+              placeholder="e.g. Dr. John"
+              value={friendName}
+              onChange={e => setFriendName(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">Friend's Email (optional)</label>
+            <input
+              type="email"
+              placeholder="e.g. friend@gmail.com"
+              value={friendEmail}
+              onChange={e => setFriendEmail(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+
+          {friendName && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
+              <p className="text-xs text-blue-600 font-medium">Share this link with {friendName}:</p>
+              <p className="text-xs text-blue-800 font-mono break-all">{chatLink}</p>
+              <button
+                onClick={copyLink}
+                className={`w-full py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                  copied ? 'bg-green-500 text-white' : 'bg-white border border-blue-300 text-blue-600 hover:bg-blue-50'
+                }`}
+              >
+                {copied ? '✓ Copied!' : 'Copy Link'}
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button
+              onClick={startChat}
+              disabled={!friendName.trim()}
+              className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <MessageSquare size={14} /> Start Chat
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const PatientDashboard = () => {
   const { user }    = useUser()
   const { signOut } = useClerk()
@@ -598,13 +1007,36 @@ const PatientDashboard = () => {
   const [showPrescriptions, setShowPrescriptions]   = useState(false)
   const [showJoinConsultation, setShowJoinConsultation] = useState(false)
   const [showUploadReports, setShowUploadReports]   = useState(false)
+  const [showFindDoctors, setShowFindDoctors]       = useState(false)
+  const [showChat, setShowChat]                     = useState(false)
   const [reminders, setReminders] = useState([])
   const [loadingReminders, setLoadingReminders] = useState(false)
   const [alarmAppt, setAlarmAppt] = useState(null)
   const [activePanel, setActivePanel] = useState(null)
+  const [apptNotification, setApptNotification] = useState(null) // { status, doctorName, roomLink }
   const firedRef = useRef(new Set())
   const fileInputRef = useRef(null)
+  const socketRef = useRef(null)
   useSyncUser()
+
+  // Register patient with socket for real-time notifications
+  useEffect(() => {
+    if (!user?.id) return
+    console.log('[Patient] Connecting socket with userId:', user.id)
+    const socket = io(SOCKET_URL, { transports: ['websocket'] })
+    socketRef.current = socket
+    socket.on('connect', () => {
+      console.log('[Patient] Socket connected:', socket.id)
+      socket.emit('register', user.id)
+    })
+    socket.on('appointment-status', (data) => {
+      console.log('[Patient] Appointment status received:', data)
+      setApptNotification(data)
+      refetch()
+    })
+    socket.on('connect_error', (err) => console.log('[Patient] Socket error:', err.message))
+    return () => socket.disconnect()
+  }, [user?.id])
 
   useEffect(() => {
     apiFetch('/patients/reminders', getToken)
@@ -653,13 +1085,14 @@ const PatientDashboard = () => {
   }
 
   const handleQuickAction = async (label) => {
-    if (label === 'Find Doctors') navigate('/find-doctors')
     if (label === 'Book Appointment') setShowBooking(true)
     if (label === 'Join Consultation') setShowJoinConsultation(true)
     if (label === 'Upload Reports') setShowUploadReports(true)
     if (label === 'My Prescriptions') setShowPrescriptions(true)
     if (label === 'Order Medicines') navigate('/pharmacy')
     if (label === 'History') setShowHistory(true)
+    if (label === 'Find My Doctors') setShowFindDoctors(true)
+    if (label === 'Chat') setShowChat(true)
     if (label === 'Reminders') {
       setShowReminders(true)
       setLoadingReminders(true)
@@ -823,19 +1256,56 @@ const PatientDashboard = () => {
             </Card>
           </section>
         )}
-
       </main>
 
+      {apptNotification && (
+        <div className="fixed top-5 right-5 z-[70] bg-white border-2 border-green-400 rounded-2xl shadow-2xl p-4 w-80 space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Bell size={18} className={`shrink-0 ${apptNotification.status === 'Confirmed' ? 'text-green-500' : 'text-red-500'}`} />
+              <div>
+                <p className="font-semibold text-gray-900 text-sm">Appointment {apptNotification.status}!</p>
+                <p className="text-xs text-gray-600 mt-0.5">{apptNotification.doctorName}</p>
+                {apptNotification.status === 'Confirmed' && apptNotification.roomLink && (
+                  <p className="text-xs text-green-600 mt-1">Your video call room is ready!</p>
+                )}
+              </div>
+            </div>
+            <button onClick={() => setApptNotification(null)} className="text-gray-400 hover:text-gray-600 shrink-0"><X size={15} /></button>
+          </div>
+          {apptNotification.status === 'Confirmed' && apptNotification.roomLink && (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500 font-mono break-all">{apptNotification.roomLink}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigator.clipboard.writeText(apptNotification.roomLink)}
+                  className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
+                >
+                  Copy Link
+                </button>
+                <a
+                  href={apptNotification.roomLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setApptNotification(null)}
+                  className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-green-500 hover:bg-green-600 text-white text-center"
+                >
+                  Join Call
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {alarmAppt && (
-        <div className="fixed top-5 right-5 z-[60] bg-white border-2 border-yellow-400 rounded-2xl shadow-2xl p-4 w-80 animate-bounce">
+        <div className="fixed top-24 right-5 z-[60] bg-white border-2 border-yellow-400 rounded-2xl shadow-2xl p-4 w-80">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
               <Bell size={20} className="text-yellow-500 shrink-0" />
               <div>
                 <p className="font-semibold text-gray-900 text-sm">Appointment Now!</p>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  {alarmAppt.doctor.title} {alarmAppt.doctor.firstName} {alarmAppt.doctor.lastName}
-                </p>
+                <p className="text-xs text-gray-600 mt-0.5">{alarmAppt.doctor.title} {alarmAppt.doctor.firstName} {alarmAppt.doctor.lastName}</p>
                 <p className="text-xs text-blue-600">{alarmAppt.doctor.specialty}</p>
                 <p className="text-xs text-gray-400 mt-1">{alarmAppt.time} · {alarmAppt.consultationType}</p>
               </div>
@@ -844,11 +1314,14 @@ const PatientDashboard = () => {
           </div>
         </div>
       )}
-
-      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
-      {showPrescriptions && <PrescriptionsModal onClose={() => setShowPrescriptions(false)} />}
       {showJoinConsultation && <JoinConsultationModal onClose={() => setShowJoinConsultation(false)} navigate={navigate} />}
       {showUploadReports && <UploadReportsModal onClose={() => setShowUploadReports(false)} />}
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
+      {showPrescriptions && <PrescriptionsModal onClose={() => setShowPrescriptions(false)} />}
+
+      {showChat && <ChatStartModal onClose={() => setShowChat(false)} navigate={navigate} user={user} />}
+
+      {showFindDoctors && <FindMyDoctorsModal onClose={() => setShowFindDoctors(false)} navigate={navigate} />}
 
       {showBooking && (
         <BookingModal

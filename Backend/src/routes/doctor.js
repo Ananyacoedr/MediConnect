@@ -39,6 +39,29 @@ router.put('/availability', requireAuth, updateAvailability)
 router.get('/dashboard',    requireAuth, getDashboardStats)
 router.get('/appointments', requireAuth, getAllAppointments)
 
+// Admin doctor management
+router.post('/admin', requireAuth, async (req, res) => {
+  try {
+    const doctor = await Doctor.create(req.body)
+    res.status(201).json(doctor)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+router.patch('/admin/:id', requireAuth, async (req, res) => {
+  try {
+    const doctor = await Doctor.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true })
+    if (!doctor) return res.status(404).json({ error: 'Doctor not found' })
+    res.json(doctor)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+router.delete('/admin/:id', requireAuth, async (req, res) => {
+  try {
+    await Doctor.findByIdAndDelete(req.params.id)
+    res.json({ success: true })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
 router.get('/:id', async (req, res) => {
   try {
     const doctor = await Doctor.findById(req.params.id, '-__v')

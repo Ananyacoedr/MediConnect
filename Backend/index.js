@@ -31,67 +31,72 @@ app.use('/api/products',      productRoutes)
 app.use('/api/orders',        orderRoutes)
 app.use('/api/wishlist',      wishlistRoutes)
 
-app.get('/health', (_, res) => res.json({ status: 'ok' }))
-
 // ── Socket.io Real-time Signaling ──────────────────────────────────────────
-// Map: userId -> socketId
 const onlineUsers = {}
+
+// make io accessible to controllers
+app.set('io', io)
+app.set('onlineUsers', onlineUsers)
+
+app.get('/health', (_, res) => res.json({ status: 'ok' }))
 
 io.on('connection', (socket) => {
 
-  // Register user (patient or doctor) with their userId
   socket.on('register', (userId) => {
     onlineUsers[userId] = socket.id
     socket.userId = userId
+    console.log(`[Socket] Registered: ${userId} -> ${socket.id}`)
+    console.log(`[Socket] Online users:`, Object.keys(onlineUsers))
     io.emit('online-users', Object.keys(onlineUsers))
   })
 
-  // Patient calls doctor
   socket.on('call-user', ({ to, from, fromName, offer, type }) => {
     const targetSocket = onlineUsers[to]
-    if (targetSocket) {
-      io.to(targetSocket).emit('incoming-call', { from, fromName, offer, type })
-    }
+    if (targetSocket) io.to(targetSocket).emit('incoming-call', { from, fromName, offer, type })
   })
 
-  // Doctor answers call
   socket.on('call-answer', ({ to, answer }) => {
     const targetSocket = onlineUsers[to]
-    if (targetSocket) {
-      io.to(targetSocket).emit('call-answered', { answer })
-    }
+    if (targetSocket) io.to(targetSocket).emit('call-answered', { answer })
   })
 
-  // ICE candidates exchange
   socket.on('ice-candidate', ({ to, candidate }) => {
     const targetSocket = onlineUsers[to]
-    if (targetSocket) {
-      io.to(targetSocket).emit('ice-candidate', { candidate })
-    }
+    if (targetSocket) io.to(targetSocket).emit('ice-candidate', { candidate })
   })
 
-  // Call rejected
   socket.on('call-rejected', ({ to }) => {
     const targetSocket = onlineUsers[to]
-    if (targetSocket) {
-      io.to(targetSocket).emit('call-rejected')
-    }
+    if (targetSocket) io.to(targetSocket).emit('call-rejected')
   })
 
-  // Call ended
   socket.on('call-ended', ({ to }) => {
     const targetSocket = onlineUsers[to]
-    if (targetSocket) {
-      io.to(targetSocket).emit('call-ended')
-    }
+    if (targetSocket) io.to(targetSocket).emit('call-ended')
   })
 
-  // Disconnect
   socket.on('disconnect', () => {
     if (socket.userId) {
       delete onlineUsers[socket.userId]
       io.emit('online-users', Object.keys(onlineUsers))
     }
+  })
+
+  // ── Chat ──────────────────────────────────────────────────────────────────
+  socket.on('join-chat', (roomId) => {
+    socket.join(roomId)
+  })
+
+  socket.on('chat-message', ({ roomId, message }) => {
+    io.to(roomId).emit('chat-message', message)
+  })
+
+  socket.on('typing', ({ roomId, name }) => {
+    socket.to(roomId).emit('typing', { name })
+  })
+
+  socket.on('stop-typing', ({ roomId }) => {
+    socket.to(roomId).emit('stop-typing')
   })
 })
 

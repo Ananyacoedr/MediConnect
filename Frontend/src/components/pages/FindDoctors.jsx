@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
   HeartPulse, ArrowLeft, Search, Loader2, X,
   MapPin, Stethoscope, Star, CalendarPlus,
-  Video, Mic, User, CheckCircle, Phone
+  Video, User, CheckCircle, Copy, Check
 } from 'lucide-react'
 
 const SPECIALTIES = [
@@ -235,7 +235,18 @@ const FindDoctors = () => {
   // Unique specialties from actual DB data for filter pills
   const dbSpecialties = ['All', ...Array.from(new Set(doctors.map(d => d.specialty).filter(Boolean))).sort()]
 
-  const DoctorCard = ({ doc }) => (
+  const DoctorCard = ({ doc }) => {
+    const [copied, setCopied] = useState(false)
+
+    const roomURL = `${window.location.origin}/video/room_${doc._id}`
+
+    const copyLink = () => {
+      navigator.clipboard.writeText(roomURL)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    }
+
+    return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-5 pb-5">
         <div className="flex items-start gap-3 cursor-pointer" onClick={() => navigate(`/doctor/${doc._id}`)}>
@@ -269,27 +280,24 @@ const FindDoctors = () => {
             <CalendarPlus size={13} /> Book
           </Button>
           <button
-            onClick={() => navigate(`/call/${doc._id}?type=video&name=${encodeURIComponent(`${doc.title || ''} ${doc.firstName} ${doc.lastName}`.trim())}`)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors"
-          >
-            <Video size={13} /> Call
-          </button>
-          <button
-            onClick={() => navigate(`/call/${doc._id}?type=audio&name=${encodeURIComponent(`${doc.title || ''} ${doc.firstName} ${doc.lastName}`.trim())}`)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors"
-          >
-            <Phone size={13} /> Audio
-          </button>
-          <button
             onClick={() => navigate(`/video/room_${doc._id}?name=${encodeURIComponent(`${doc.title || ''} ${doc.firstName} ${doc.lastName}`.trim())}`)}
             className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors"
           >
-            <Video size={13} /> Zego
+            <Video size={13} /> Video Call
+          </button>
+          <button
+            onClick={copyLink}
+            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              copied ? 'bg-green-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+            }`}
+          >
+            {copied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy Link</>}
           </button>
         </div>
       </CardContent>
     </Card>
-  )
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">

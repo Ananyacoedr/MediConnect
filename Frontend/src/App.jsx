@@ -41,6 +41,7 @@ import AdminPanel from './components/pages/AdminPanel'
 import DirectCall from './components/pages/DirectCall'
 import AnswerCall from './components/pages/AnswerCall'
 import VideoCall from './components/pages/VideoCall'
+import Chat from './components/pages/Chat'
 
 const ProtectedRoute = ({ children }) => (
   <>
@@ -77,6 +78,7 @@ function App() {
       <Route path="/call/:doctorId" element={<ProtectedRoute><DirectCall /></ProtectedRoute>} />
       <Route path="/answer/:roomId" element={<ProtectedRoute><AnswerCall /></ProtectedRoute>} />
       <Route path="/video/:roomID" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
+      <Route path="/chat/:roomId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
     </Routes>
     </ErrorBoundary>
   )
