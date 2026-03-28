@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { AuthenticateWithRedirectCallback, useAuth } from '@clerk/clerk-react'
+import { AuthenticateWithRedirectCallback, useAuth, ClerkLoading, ClerkLoaded } from '@clerk/clerk-react'
 import { Component } from 'react'
 
 class ErrorBoundary extends Component {
@@ -18,6 +18,7 @@ class ErrorBoundary extends Component {
     return this.props.children
   }
 }
+
 import Landing from './components/pages/Landing'
 import Login from './components/pages/Login'
 import Signup from './components/pages/Signup'
@@ -43,13 +44,15 @@ import AnswerCall from './components/pages/AnswerCall'
 import PatientConsultation from './components/pages/PatientConsultation'
 import VideoCall from './components/pages/VideoCall'
 
+const Spinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+  </div>
+)
+
 const ProtectedRoute = ({ children }) => {
   const { isLoaded, isSignedIn } = useAuth()
-  if (!isLoaded) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (!isLoaded) return <Spinner />
   if (!isSignedIn) return <Navigate to="/login" replace />
   return children
 }
@@ -57,33 +60,50 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <ErrorBoundary>
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/redirect" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
-      <Route path="/login/sso-callback" element={<AuthenticateWithRedirectCallback fallbackRedirectUrl="/redirect" />} />
-      <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-      <Route path="/doctor-dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
-      <Route path="/patient-dashboard" element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>} />
-      <Route path="/patient-appointments" element={<ProtectedRoute><AllAppointments /></ProtectedRoute>} />
-      <Route path="/doctor-profile" element={<ProtectedRoute><DoctorProfile /></ProtectedRoute>} />
-      <Route path="/consultation/:id" element={<ProtectedRoute><ConsultationPage /></ProtectedRoute>} />
-      <Route path="/start-consultation" element={<ProtectedRoute><StartConsultation /></ProtectedRoute>} />
-      <Route path="/find-doctors" element={<FindDoctors />} />
-      <Route path="/doctor/:id" element={<DoctorPublicProfile />} />
-      <Route path="/pharmacy" element={<PharmacyHome />} />
-      <Route path="/pharmacy/products" element={<ProductListing />} />
-      <Route path="/pharmacy/product/:id" element={<ProductDetail />} />
-      <Route path="/pharmacy/cart" element={<PharmacyCart />} />
-      <Route path="/pharmacy/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
-      <Route path="/pharmacy/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
-      <Route path="/pharmacy/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-      <Route path="/call/:doctorId" element={<ProtectedRoute><DirectCall /></ProtectedRoute>} />
-      <Route path="/answer/:roomId" element={<ProtectedRoute><AnswerCall /></ProtectedRoute>} />
-      <Route path="/patient-consultation/:id" element={<ProtectedRoute><PatientConsultation /></ProtectedRoute>} />
-      <Route path="/video/:roomID" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
-    </Routes>
+      {/* Show spinner while Clerk initialises — prevents ANY blank page */}
+      <ClerkLoading>
+        <Spinner />
+      </ClerkLoading>
+
+      <ClerkLoaded>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/find-doctors" element={<FindDoctors />} />
+          <Route path="/doctor/:id" element={<DoctorPublicProfile />} />
+          <Route path="/pharmacy" element={<PharmacyHome />} />
+          <Route path="/pharmacy/products" element={<ProductListing />} />
+          <Route path="/pharmacy/product/:id" element={<ProductDetail />} />
+          <Route path="/pharmacy/cart" element={<PharmacyCart />} />
+
+          {/* Gmail / SSO callback — must be public, no ProtectedRoute */}
+          <Route
+            path="/login/sso-callback"
+            element={<AuthenticateWithRedirectCallback fallbackRedirectUrl="/redirect" />}
+          />
+
+          {/* After login — role picker */}
+          <Route path="/redirect" element={<ProtectedRoute><RoleRedirect /></ProtectedRoute>} />
+          <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+
+          {/* Protected */}
+          <Route path="/doctor-dashboard" element={<ProtectedRoute><DoctorDashboard /></ProtectedRoute>} />
+          <Route path="/patient-dashboard" element={<ProtectedRoute><PatientDashboard /></ProtectedRoute>} />
+          <Route path="/patient-appointments" element={<ProtectedRoute><AllAppointments /></ProtectedRoute>} />
+          <Route path="/doctor-profile" element={<ProtectedRoute><DoctorProfile /></ProtectedRoute>} />
+          <Route path="/consultation/:id" element={<ProtectedRoute><ConsultationPage /></ProtectedRoute>} />
+          <Route path="/patient-consultation/:id" element={<ProtectedRoute><PatientConsultation /></ProtectedRoute>} />
+          <Route path="/start-consultation" element={<ProtectedRoute><StartConsultation /></ProtectedRoute>} />
+          <Route path="/pharmacy/orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+          <Route path="/pharmacy/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
+          <Route path="/pharmacy/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+          <Route path="/call/:doctorId" element={<ProtectedRoute><DirectCall /></ProtectedRoute>} />
+          <Route path="/answer/:roomId" element={<ProtectedRoute><AnswerCall /></ProtectedRoute>} />
+          <Route path="/video/:roomID" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
+        </Routes>
+      </ClerkLoaded>
     </ErrorBoundary>
   )
 }
