@@ -13,12 +13,12 @@ import {
 } from 'lucide-react'
 
 const FEATURES = [
-  { icon: Video,         title: 'Real-time Consultations', desc: 'Connect with verified doctors via HD video, audio, or chat — from anywhere, anytime.',               color: 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300'    },
-  { icon: Brain,         title: 'AI Symptom Checker',      desc: 'Describe your symptoms and get instant specialist recommendations powered by smart analysis.',         color: 'bg-purple-50 dark:bg-purple-900 text-purple-600 dark:text-purple-300'},
-  { icon: ShieldCheck,   title: 'Secure Prescriptions',    desc: 'Receive digital prescriptions directly from your doctor, stored safely in your profile.',              color: 'bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-300'  },
-  { icon: CalendarCheck, title: 'Easy Scheduling',         desc: 'Book appointments in seconds. View doctor availability and pick a time that works for you.',           color: 'bg-orange-50 dark:bg-orange-900 text-orange-600 dark:text-orange-300'},
-  { icon: ClipboardList, title: 'Medical Records',         desc: 'Upload and manage your health reports, prescriptions, and history in one secure place.',               color: 'bg-pink-50 dark:bg-pink-900 text-pink-600 dark:text-pink-300'      },
-  { icon: MessageSquare, title: '24/7 Support',            desc: 'Our support team and on-call doctors are available around the clock for urgent needs.',                color: 'bg-teal-50 dark:bg-teal-900 text-teal-600 dark:text-teal-300'     },
+  { icon: Video,         title: 'Real-time Consultations', desc: 'Connect with verified doctors via HD video, audio, or chat — from anywhere, anytime.',               color: 'bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 text-blue-600 dark:text-blue-400 dark:text-blue-300'    },
+  { icon: Brain,         title: 'AI Symptom Checker',      desc: 'Describe your symptoms and get instant specialist recommendations powered by smart analysis.',         color: 'bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900 text-purple-600 dark:text-purple-400 dark:text-purple-300'},
+  { icon: ShieldCheck,   title: 'Secure Prescriptions',    desc: 'Receive digital prescriptions directly from your doctor, stored safely in your profile.',              color: 'bg-green-50 dark:bg-green-900/30 dark:bg-green-900 text-green-600 dark:text-green-400 dark:text-green-300'  },
+  { icon: CalendarCheck, title: 'Easy Scheduling',         desc: 'Book appointments in seconds. View doctor availability and pick a time that works for you.',           color: 'bg-orange-50 dark:bg-orange-900/30 dark:bg-orange-900 text-orange-600 dark:text-orange-300'},
+  { icon: ClipboardList, title: 'Medical Records',         desc: 'Upload and manage your health reports, prescriptions, and history in one secure place.',               color: 'bg-pink-50 dark:bg-pink-900/30 dark:bg-pink-900 text-pink-600 dark:text-pink-300'      },
+  { icon: MessageSquare, title: '24/7 Support',            desc: 'Our support team and on-call doctors are available around the clock for urgent needs.',                color: 'bg-teal-50 dark:bg-teal-900/30 dark:bg-teal-900 text-teal-600 dark:text-teal-300'     },
 ]
 
 const SPECIALTIES = [
@@ -45,10 +45,10 @@ const STEPS = [
 ]
 
 const STATS = [
-  { icon: Users, value: '500+', label: 'Verified Doctors', color: 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300'     },
-  { icon: Star,  value: '4.9★', label: 'Average Rating',   color: 'bg-yellow-50 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300'},
-  { icon: Clock, value: '24/7', label: 'Always Available', color: 'bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-300'   },
-  { icon: Lock,  value: '100%', label: 'Secure & Private', color: 'bg-purple-50 dark:bg-purple-900 text-purple-600 dark:text-purple-300'},
+  { icon: Users, value: '500+', label: 'Verified Doctors', color: 'bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 text-blue-600 dark:text-blue-400 dark:text-blue-300'     },
+  { icon: Star,  value: '4.9★', label: 'Average Rating',   color: 'bg-yellow-50 dark:bg-yellow-900/30 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 dark:text-yellow-300'},
+  { icon: Clock, value: '24/7', label: 'Always Available', color: 'bg-green-50 dark:bg-green-900/30 dark:bg-green-900 text-green-600 dark:text-green-400 dark:text-green-300'   },
+  { icon: Lock,  value: '100%', label: 'Secure & Private', color: 'bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900 text-purple-600 dark:text-purple-400 dark:text-purple-300'},
 ]
 
 const FAQ_ITEMS = [
@@ -66,7 +66,7 @@ const FAQ = () => {
   return (
     <div className="space-y-2">
       {FAQ_ITEMS.map((item, i) => (
-        <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        <div key={i} className="border border-gray-200 dark:border-gray-800 dark:border-gray-700 rounded-xl overflow-hidden">
           <button
             onClick={() => setOpen(open === i ? null : i)}
             className="w-full flex items-center justify-between px-5 py-4 text-left bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
@@ -75,7 +75,7 @@ const FAQ = () => {
             <ChevronRight size={16} className={`text-gray-400 transition-transform shrink-0 ml-3 ${open === i ? 'rotate-90' : ''}`} />
           </button>
           {open === i && (
-            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
+            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-950 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
               <p className="text-sm text-gray-600 dark:text-gray-400">{item.a}</p>
             </div>
           )}
@@ -91,15 +91,15 @@ const AuthModal = ({ mode, onClose, onPatient, onDoctor }) => (
     <Card className="w-full max-w-sm relative">
       <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X size={18} /></button>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-blue-600">
+        <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
           <HeartPulse size={20} /> {mode === 'signin' ? 'Sign In to MediConnect' : 'Join MediConnect'}
         </CardTitle>
         <p className="text-sm text-gray-500 dark:text-gray-400">Choose your role to continue</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <button onClick={onPatient}
-          className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-950 transition-all group">
-          <div className="p-2 rounded-full bg-green-50 dark:bg-green-900 text-green-600"><UserRound size={20} strokeWidth={1.5} /></div>
+          className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-800 dark:border-gray-700 hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-950 transition-all group">
+          <div className="p-2 rounded-full bg-green-50 dark:bg-green-900/30 dark:bg-green-900 text-green-600 dark:text-green-400"><UserRound size={20} strokeWidth={1.5} /></div>
           <div className="text-left flex-1">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{mode === 'signin' ? 'Sign in as Patient' : "I'm a Patient"}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Book appointments & consult doctors</p>
@@ -107,8 +107,8 @@ const AuthModal = ({ mode, onClose, onPatient, onDoctor }) => (
           <ChevronRight size={15} className="text-gray-300 group-hover:text-green-500" />
         </button>
         <button onClick={onDoctor}
-          className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-all group">
-          <div className="p-2 rounded-full bg-blue-50 dark:bg-blue-900 text-blue-600"><Stethoscope size={20} strokeWidth={1.5} /></div>
+          className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-800 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition-all group">
+          <div className="p-2 rounded-full bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 text-blue-600 dark:text-blue-400"><Stethoscope size={20} strokeWidth={1.5} /></div>
           <div className="text-left flex-1">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{mode === 'signin' ? 'Sign in as Doctor' : "I'm a Doctor"}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">Manage patients & consultations</p>
@@ -147,7 +147,7 @@ const Landing = () => {
   const goFindDoctors     = (specialty) => navigate(specialty ? `/find-doctors?specialty=${encodeURIComponent(specialty)}` : '/find-doctors')
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:bg-gray-900 flex flex-col transition-colors">
 
       {modal === 'signin' && (
         <AuthModal mode="signin" onClose={() => setModal(null)}
@@ -163,8 +163,8 @@ const Landing = () => {
       )}
 
       {/* ── HEADER ── */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
-        <div className="flex items-center gap-2 text-blue-600 font-bold text-xl cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+      <header className="flex items-center justify-between px-8 py-4 border-b dark:border-gray-800 border-gray-200 dark:border-gray-800 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
+        <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <HeartPulse size={24} /> MediConnect
         </div>
         <div className="hidden md:flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300">
@@ -192,7 +192,7 @@ const Landing = () => {
               Telemedicine & AI-Powered Healthcare
             </span>
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-gray-100 tracking-tight max-w-3xl leading-tight">
-              Healthcare at Your <span className="text-blue-600">Fingertips.</span>
+              Healthcare at Your <span className="text-blue-600 dark:text-blue-400">Fingertips.</span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-lg max-w-xl leading-relaxed">
               Connect with verified doctors via video, audio, or chat. Use our AI Symptom Checker to understand your health and book appointments in seconds.
@@ -203,8 +203,8 @@ const Landing = () => {
                 <Search size={17} /> Find a Doctor
               </Button>
               {/* Join as Doctor — goes directly to doctor signup */}
-              <Button size="lg" variant="outline" onClick={goRegisterDoctor} className="flex items-center gap-2">
-                <Stethoscope size={17} /> Join as Doctor
+              <Button size="lg" variant="outline" onClick={goRegisterPatient} className="flex items-center gap-2">
+                <UserRound size={17} /> Join as Patient
               </Button>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-6 pt-2">
@@ -243,44 +243,15 @@ const Landing = () => {
               <button
                 key={name}
                 onClick={() => goFindDoctors(name)}
-                className="flex flex-col items-center gap-2.5 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:shadow-md transition-all group"
+                className="flex flex-col items-center gap-2.5 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-800 dark:border-gray-700 hover:border-blue-400 hover:shadow-md transition-all group"
               >
-                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-800 transition-colors">
+                <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 text-blue-600 dark:text-blue-400 dark:text-blue-300 group-hover:bg-blue-100 dark:group-hover:bg-blue-800 transition-colors">
                   <Icon size={18} strokeWidth={1.5} />
                 </div>
                 <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{name}</span>
               </button>
             ))}
           </div>
-        </section>
-
-        {/* ── HOW IT WORKS ── */}
-        <section ref={howItWorksRef} className="px-6 py-12 max-w-6xl mx-auto w-full space-y-6">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">How It Works</h2>
-          <Card className="bg-gradient-to-r from-blue-600 to-blue-500 border-0">
-            <CardContent className="pt-6 pb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {STEPS.map(({ num, title, desc }) => (
-                  <div key={num} className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white font-bold text-sm shrink-0">{num}</div>
-                    <div>
-                      <p className="text-white font-semibold text-sm">{title}</p>
-                      <p className="text-blue-100 text-xs mt-1 leading-relaxed">{desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Get Started Free — patient only */}
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={goRegisterPatient}
-                  className="flex items-center gap-2 bg-white text-blue-600 text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-blue-50 transition-colors"
-                >
-                  Get Started Free <ChevronRight size={16} />
-                </button>
-              </div>
-            </CardContent>
-          </Card>
         </section>
 
         {/* ── STATS / ABOUT ── */}
@@ -301,68 +272,14 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* ── FAQ ── */}
-        <section ref={faqRef} className="px-6 py-12 max-w-6xl mx-auto w-full space-y-6">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Frequently Asked Questions</h2>
-          <FAQ />
-        </section>
-
-        {/* ── CONTACT ── */}
-        <section ref={contactRef} className="px-6 py-12 max-w-6xl mx-auto w-full space-y-6">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact Us</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card>
-              <CardContent className="pt-5 pb-5 space-y-4">
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Get in Touch</p>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-600"><Mail size={16} /></div>
-                    <span>mediconnect@global.com</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900 text-green-600"><Phone size={16} /></div>
-                    <span>+91 7283561789</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900 text-orange-600"><MapPin size={16} /></div>
-                    <span>Available 24/7 — Worldwide</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-5 pb-5 space-y-3">
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Send a Message</p>
-                <input placeholder="Your name" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                <input placeholder="Your email" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                <textarea rows={3} placeholder="Your message..." className="w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
-                <Button className="w-full">Send Message</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* ── CTA — patient only ── */}
-        <section className="px-6 py-12 max-w-6xl mx-auto w-full">
-          <Card>
-            <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-6 pb-6">
-              <div>
-                <p className="text-base font-semibold text-gray-900 dark:text-gray-100">Ready to take control of your health?</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Join thousands of patients on MediConnect today.</p>
-              </div>
-              <Button onClick={goRegisterPatient} className="shrink-0">Register as Patient</Button>
-            </CardContent>
-          </Card>
-        </section>
-
       </main>
 
       {/* ── FOOTER ── */}
-      <footer className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <footer className="border-t border-gray-200 dark:border-gray-800 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
 
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-blue-600 font-bold text-base">
+            <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-base">
               <HeartPulse size={20} /> MediConnect
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
@@ -397,14 +314,14 @@ const Landing = () => {
               <div className="relative flex-1">
                 <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="email" placeholder="your@email.com"
-                  className="w-full pl-8 pr-2 py-2 text-xs border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full pl-8 pr-2 py-2 text-xs border border-gray-200 dark:border-gray-800 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-950 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <Button size="sm">Subscribe</Button>
             </div>
           </div>
 
         </div>
-        <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400 dark:text-gray-500">
+        <div className="border-t border-gray-200 dark:border-gray-800 dark:border-gray-700 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400 dark:text-gray-500">
           <p>© {new Date().getFullYear()} MediConnect. All rights reserved.</p>
           <p>Made with ❤️ for better healthcare</p>
         </div>

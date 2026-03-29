@@ -33,7 +33,7 @@ const WishlistPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <header className="bg-blue-600 text-white sticky top-0 z-40 shadow-md">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm hover:text-blue-200"><ArrowLeft size={16} /> Back</button>
@@ -44,12 +44,12 @@ const WishlistPage = () => {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-4">
-        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Heart size={20} className="text-red-500" /> My Wishlist</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2"><Heart size={20} className="text-red-500" /> My Wishlist</h1>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-gray-400 py-10 justify-center"><Loader2 size={20} className="animate-spin" /></div>
+          <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 py-10 justify-center"><Loader2 size={20} className="animate-spin" /></div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20 text-gray-400 space-y-3">
+          <div className="text-center py-20 text-gray-400 dark:text-gray-500 space-y-3">
             <Heart size={48} className="mx-auto text-gray-200" />
             <p>Your wishlist is empty.</p>
             <button onClick={() => navigate('/pharmacy/products')} className="px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">Browse Products</button>
@@ -59,23 +59,23 @@ const WishlistPage = () => {
             {items.map(product => {
               const discounted = +(product.price * (1 - product.discountPercent / 100)).toFixed(2)
               return (
-                <div key={product._id} className="bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all flex flex-col relative">
-                  <button onClick={() => handleRemove(product._id)} className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white shadow-sm border border-gray-100">
+                <div key={product._id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all flex flex-col relative">
+                  <button onClick={() => handleRemove(product._id)} className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white dark:bg-gray-900 shadow-sm border border-gray-100">
                     <Heart size={14} className="fill-red-500 text-red-500" />
                   </button>
                   <div onClick={() => navigate(`/pharmacy/product/${product._id}`)} className="cursor-pointer p-4 flex flex-col flex-1">
-                    <div className="h-28 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+                    <div className="h-28 flex items-center justify-center bg-gray-50 dark:bg-gray-950 rounded-lg mb-3">
                       {product.images?.[0] ? <img src={product.images[0]} alt={product.name} className="h-full object-contain" /> : <Pill size={36} className="text-blue-200" />}
                     </div>
-                    <p className="text-xs text-gray-400">{product.brand}</p>
-                    <p className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1 mt-0.5">{product.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{product.brand}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 flex-1 mt-0.5">{product.name}</p>
                     <div className="flex items-center gap-1 mt-1">
                       <Star size={11} className="fill-yellow-400 text-yellow-400" />
-                      <span className="text-xs text-gray-500">{product.rating?.toFixed(1) || '—'}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{product.rating?.toFixed(1) || '—'}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-base font-bold text-gray-900">₹{discounted}</span>
-                      {product.discountPercent > 0 && <span className="text-xs text-green-600 font-medium">{product.discountPercent}% off</span>}
+                      <span className="text-base font-bold text-gray-900 dark:text-gray-100">₹{discounted}</span>
+                      {product.discountPercent > 0 && <span className="text-xs text-green-600 dark:text-green-400 font-medium">{product.discountPercent}% off</span>}
                     </div>
                   </div>
                   <div className="px-4 pb-4">

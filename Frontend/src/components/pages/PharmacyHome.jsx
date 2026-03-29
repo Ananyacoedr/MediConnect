@@ -8,11 +8,11 @@ import {
 } from 'lucide-react'
 
 const CATEGORIES = [
-  { key: 'medicines',      label: 'Medicines',       icon: Pill,        color: 'bg-blue-50 text-blue-600' },
-  { key: 'supplements',    label: 'Supplements',     icon: Leaf,        color: 'bg-green-50 text-green-600' },
-  { key: 'vitamins',       label: 'Vitamins',        icon: BadgeCheck,  color: 'bg-yellow-50 text-yellow-600' },
-  { key: 'personal-care',  label: 'Personal Care',   icon: Shield,      color: 'bg-pink-50 text-pink-600' },
-  { key: 'health-devices', label: 'Health Devices',  icon: Thermometer, color: 'bg-purple-50 text-purple-600' },
+  { key: 'medicines',      label: 'Medicines',       icon: Pill,        color: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
+  { key: 'supplements',    label: 'Supplements',     icon: Leaf,        color: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
+  { key: 'vitamins',       label: 'Vitamins',        icon: BadgeCheck,  color: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' },
+  { key: 'personal-care',  label: 'Personal Care',   icon: Shield,      color: 'bg-pink-50 dark:bg-pink-900/30 text-pink-600' },
+  { key: 'health-devices', label: 'Health Devices',  icon: Thermometer, color: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
 ]
 
 const BANNERS = [
@@ -27,19 +27,19 @@ const ProductCard = ({ product, onAddToCart, wishlistIds, onToggleWishlist }) =>
   const wishlisted = wishlistIds.includes(product._id)
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all group relative flex flex-col">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all group relative flex flex-col">
       <button
-        onClick={() => onToggleWishlist(product._id)}
-        className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white shadow-sm border border-gray-100"
+        onClick={(e) => { e.stopPropagation(); onToggleWishlist(product._id); }}
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white dark:bg-gray-900 shadow-sm border border-gray-100 hover:scale-110 active:scale-75 transition-all duration-200"
       >
-        <Heart size={14} className={wishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400'} />
+        <Heart size={14} className={`${wishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'} transition-colors duration-200`} />
       </button>
 
       <div
         onClick={() => navigate(`/pharmacy/product/${product._id}`)}
         className="cursor-pointer p-4 flex flex-col flex-1"
       >
-        <div className="h-28 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+        <div className="h-28 flex items-center justify-center bg-gray-50 dark:bg-gray-950 rounded-lg mb-3">
           {product.images?.[0]
             ? <img src={product.images[0]} alt={product.name} className="h-full object-contain" />
             : <Pill size={40} className="text-blue-200" />
@@ -47,23 +47,23 @@ const ProductCard = ({ product, onAddToCart, wishlistIds, onToggleWishlist }) =>
         </div>
 
         {product.requiresPrescription && (
-          <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-medium mb-1 w-fit">Rx Required</span>
+          <span className="text-[10px] bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 px-1.5 py-0.5 rounded font-medium mb-1 w-fit">Rx Required</span>
         )}
 
-        <p className="text-xs text-gray-400 mb-0.5">{product.brand}</p>
-        <p className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1">{product.name}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">{product.brand}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 flex-1">{product.name}</p>
 
         <div className="flex items-center gap-1 mt-1">
           <Star size={11} className="fill-yellow-400 text-yellow-400" />
-          <span className="text-xs text-gray-500">{product.rating?.toFixed(1) || '—'} ({product.reviewCount})</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{product.rating?.toFixed(1) || '—'} ({product.reviewCount})</span>
         </div>
 
         <div className="flex items-center gap-2 mt-2">
-          <span className="text-base font-bold text-gray-900">₹{discounted}</span>
+          <span className="text-base font-bold text-gray-900 dark:text-gray-100">₹{discounted}</span>
           {product.discountPercent > 0 && (
             <>
-              <span className="text-xs text-gray-400 line-through">₹{product.price}</span>
-              <span className="text-xs text-green-600 font-medium">{product.discountPercent}% off</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 line-through">₹{product.price}</span>
+              <span className="text-xs text-green-600 dark:text-green-400 font-medium">{product.discountPercent}% off</span>
             </>
           )}
         </div>
@@ -71,7 +71,7 @@ const ProductCard = ({ product, onAddToCart, wishlistIds, onToggleWishlist }) =>
 
       <div className="px-4 pb-4">
         <button
-          onClick={() => onAddToCart(product)}
+          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
           className="w-full py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5"
         >
           <ShoppingCart size={13} /> Add to Cart
@@ -123,10 +123,20 @@ const PharmacyHome = () => {
 
   const handleToggleWishlist = async (productId) => {
     if (!isSignedIn) return navigate('/login')
+    
+    // Instantly update UI (Optimistic Rendering)
+    const isCurrentlyWishlisted = wishlistIds.includes(productId)
+    setWishlistIds(prev => isCurrentlyWishlisted ? prev.filter(id => id !== productId) : [...prev, productId])
+
     try {
       const res = await apiFetch('/wishlist/toggle', getToken, { method: 'POST', body: JSON.stringify({ productId }) })
-      setWishlistIds(prev => res.wishlisted ? [...prev, productId] : prev.filter(id => id !== productId))
-    } catch {}
+      // Reconcile with actual backend state
+      setWishlistIds(prev => res.wishlisted ? [...new Set([...prev, productId])] : prev.filter(id => id !== productId))
+    } catch {
+      // Revert if API crashes
+      setWishlistIds(prev => isCurrentlyWishlisted ? [...prev, productId] : prev.filter(id => id !== productId))
+      showToast('Error updating wishlist')
+    }
   }
 
   const filtered = products.filter(p =>
@@ -136,7 +146,7 @@ const PharmacyHome = () => {
   const banner = BANNERS[bannerIdx]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <header className="bg-blue-600 text-white sticky top-0 z-40 shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
@@ -156,8 +166,11 @@ const PharmacyHome = () => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <button onClick={() => navigate('/pharmacy/wishlist')} className="flex items-center gap-1 text-sm hover:text-blue-200">
+            <button onClick={() => navigate('/pharmacy/wishlist')} className="relative flex items-center gap-1 text-sm hover:text-blue-200">
               <Heart size={18} />
+              {wishlistIds.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{wishlistIds.length}</span>
+              )}
             </button>
             <button onClick={() => navigate('/pharmacy/cart')} className="relative flex items-center gap-1 text-sm hover:text-blue-200">
               <ShoppingCart size={18} />
@@ -168,7 +181,7 @@ const PharmacyHome = () => {
             <button onClick={() => navigate('/pharmacy/orders')} className="text-sm hover:text-blue-200 hidden sm:block">Orders</button>
             {isSignedIn
               ? <button onClick={() => navigate('/patient-dashboard')} className="text-sm hover:text-blue-200 hidden sm:block">Dashboard</button>
-              : <button onClick={() => navigate('/login')} className="text-sm bg-white text-blue-600 px-3 py-1 rounded-lg font-medium">Login</button>
+              : <button onClick={() => navigate('/login')} className="text-sm bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-lg font-medium">Login</button>
             }
           </div>
         </div>
@@ -197,13 +210,13 @@ const PharmacyHome = () => {
           <p className="text-blue-100 mt-1">{banner.sub}</p>
           <button
             onClick={() => navigate('/pharmacy/products')}
-            className="mt-4 bg-white text-blue-600 px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors"
+            className="mt-4 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors"
           >
             Shop Now
           </button>
           <div className="flex gap-1.5 mt-4">
             {BANNERS.map((_, i) => (
-              <div key={i} className={`h-1.5 rounded-full transition-all ${i === bannerIdx ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`} />
+              <div key={i} className={`h-1.5 rounded-full transition-all ${i === bannerIdx ? 'w-6 bg-white dark:bg-gray-900' : 'w-1.5 bg-white/40'}`} />
             ))}
           </div>
         </div>
@@ -215,11 +228,11 @@ const PharmacyHome = () => {
             { icon: RotateCcw, label: 'Easy Returns', sub: '7-day return policy' },
             { icon: BadgeCheck, label: '100% Genuine', sub: 'Certified products only' },
           ].map(({ icon: Icon, label, sub }) => (
-            <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><Icon size={18} /></div>
+            <div key={label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex items-center gap-3">
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400"><Icon size={18} /></div>
               <div>
-                <p className="text-sm font-semibold text-gray-900">{label}</p>
-                <p className="text-xs text-gray-400">{sub}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{sub}</p>
               </div>
             </div>
           ))}
@@ -228,17 +241,17 @@ const PharmacyHome = () => {
         {/* Categories */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Shop by Category</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Shop by Category</h2>
           </div>
           <div className="grid grid-cols-5 gap-3">
             {CATEGORIES.map(c => (
               <button
                 key={c.key}
                 onClick={() => navigate(`/pharmacy/products?category=${c.key}`)}
-                className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all"
+                className="flex flex-col items-center gap-2 p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-blue-400 hover:shadow-sm transition-all"
               >
                 <div className={`p-3 rounded-full ${c.color}`}><c.icon size={20} /></div>
-                <span className="text-xs font-medium text-gray-700 text-center">{c.label}</span>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center">{c.label}</span>
               </button>
             ))}
           </div>
@@ -247,10 +260,10 @@ const PharmacyHome = () => {
         {/* Products */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
               {search ? `Results for "${search}"` : 'Featured Products'}
             </h2>
-            <button onClick={() => navigate('/pharmacy/products')} className="text-sm text-blue-600 flex items-center gap-1 hover:underline">
+            <button onClick={() => navigate('/pharmacy/products')} className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline">
               View all <ChevronRight size={14} />
             </button>
           </div>
@@ -258,11 +271,11 @@ const PharmacyHome = () => {
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {[...Array(10)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-200 h-64 animate-pulse" />
+                <div key={i} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 h-64 animate-pulse" />
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
+            <div className="text-center py-16 text-gray-400 dark:text-gray-500">
               <Pill size={40} className="mx-auto mb-3 text-gray-200" />
               <p>No products found.</p>
             </div>

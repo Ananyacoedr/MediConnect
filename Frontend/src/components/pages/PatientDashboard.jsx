@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { usePatientDashboard } from '@/hooks/usePatientDashboard'
 import { useSyncUser } from '@/hooks/useSyncUser'
+import SymptomChecker from '@/components/SymptomChecker'
 import { apiFetch } from '@/lib/api'
+import ThemeToggle from '@/components/ThemeToggle'
 import {
   HeartPulse, Search, CalendarPlus, Video, FileText,
   Pill, Truck, Bell, History, CalendarDays, CheckCircle,
@@ -31,8 +33,8 @@ const statusStyle = {
 const StatCard = ({ icon: Icon, label, value, color, active, onClick }) => (
   <button
     onClick={onClick}
-    className={`w-full text-left rounded-2xl border transition-all bg-white ${
-      active ? 'border-blue-400 shadow-md ring-2 ring-blue-100' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+    className={`w-full text-left rounded-2xl border transition-all bg-white dark:bg-gray-900 ${
+      active ? 'border-blue-400 shadow-md ring-2 ring-blue-100' : 'border-gray-200 dark:border-gray-800 hover:border-blue-300 hover:shadow-sm'
     }`}
   >
     <div className="flex items-center gap-4 p-5">
@@ -40,8 +42,8 @@ const StatCard = ({ icon: Icon, label, value, color, active, onClick }) => (
         <Icon size={22} strokeWidth={1.5} />
       </div>
       <div className="flex-1">
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-bold text-gray-900">{value ?? '—'}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value ?? '—'}</p>
       </div>
       <ChevronRight size={16} className={`text-gray-300 transition-transform ${active ? 'rotate-90 text-blue-400' : ''}`} />
     </div>
@@ -49,20 +51,20 @@ const StatCard = ({ icon: Icon, label, value, color, active, onClick }) => (
 )
 
 const AppointmentPanel = ({ title, appointments, onClose }) => (
-  <div className="col-span-2 lg:col-span-3 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+  <div className="col-span-2 lg:col-span-3 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 border border-blue-100 rounded-2xl p-4">
     <div className="flex items-center justify-between mb-3">
       <p className="text-sm font-semibold text-blue-700">{title}</p>
-      <button onClick={onClose} className="text-blue-400 hover:text-blue-600"><X size={15} /></button>
+      <button onClick={onClose} className="text-blue-400 hover:text-blue-600 dark:text-blue-400"><X size={15} /></button>
     </div>
     {appointments.length === 0 ? (
-      <p className="text-sm text-gray-400 py-2">No appointments in this category.</p>
+      <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 py-2">No appointments in this category.</p>
     ) : (
       <div className="flex flex-col gap-2">
         {appointments.map(appt => (
-          <div key={appt._id} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-blue-100">
+          <div key={appt._id} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl px-4 py-3 border border-blue-100">
             <div>
-              <p className="text-sm font-medium text-gray-900">Dr. {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Dr. {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
                 {appt.doctor?.specialty && <span className="mr-2">{appt.doctor.specialty}</span>}
                 {new Date(appt.date).toLocaleDateString()} — {appt.time}
               </p>
@@ -76,15 +78,15 @@ const AppointmentPanel = ({ title, appointments, onClose }) => (
 )
 
 const quickActions = [
-  { icon: Search,       label: 'Find My Doctors',   color: 'bg-indigo-50 text-indigo-600'},
-  { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 text-purple-600'},
-  { icon: FileText,     label: 'Upload Reports',    color: 'bg-orange-50 text-orange-600'},
-  { icon: Pill,         label: 'My Prescriptions',  color: 'bg-pink-50 text-pink-600'    },
-  { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 text-teal-600'    },
-  { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 text-yellow-600'},
-  { icon: History,      label: 'History',           color: 'bg-gray-100 text-gray-600'   },
-  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 text-green-600'  },
-  { icon: MessageSquare,label: 'Chat',              color: 'bg-blue-50 text-blue-600'    },
+  { icon: Search,       label: 'Find My Doctors',   color: 'bg-indigo-50 dark:bg-indigo-900/30 dark:bg-indigo-900/30 text-indigo-600'},
+  { icon: Video,        label: 'Join Consultation', color: 'bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'},
+  { icon: FileText,     label: 'Upload Reports',    color: 'bg-orange-50 dark:bg-orange-900/30 dark:bg-orange-900/30 text-orange-600'},
+  { icon: Pill,         label: 'My Prescriptions',  color: 'bg-pink-50 dark:bg-pink-900/30 dark:bg-pink-900/30 text-pink-600'    },
+  { icon: Truck,        label: 'Order Medicines',   color: 'bg-teal-50 dark:bg-teal-900/30 dark:bg-teal-900/30 text-teal-600'    },
+  { icon: Bell,         label: 'Reminders',         color: 'bg-yellow-50 dark:bg-yellow-900/30 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'},
+  { icon: History,      label: 'History',           color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'   },
+  { icon: CalendarPlus, label: 'Book Appointment',  color: 'bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 text-green-600 dark:text-green-400'  },
+  { icon: MessageSquare,label: 'Chat',              color: 'bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'    },
 ]
 
 const HistoryModal = ({ onClose }) => {
@@ -109,46 +111,46 @@ const HistoryModal = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <p className="font-semibold text-gray-900">My Appointment History</p>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
+          <p className="font-semibold text-gray-900 dark:text-gray-100">My Appointment History</p>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
         <div className="flex gap-2 px-6 pt-4 flex-wrap">
           {FILTERS.map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                filter === f ? 'bg-blue-600 text-white' : 'border border-gray-200 text-gray-600 hover:border-blue-400'
+                filter === f ? 'bg-blue-600 text-white' : 'border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:border-blue-400'
               }`}>
               {f} ({counts[f]})
             </button>
           ))}
         </div>
         <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
-          {loading && <div className="flex items-center gap-2 text-gray-400 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
-          {!loading && filtered.length === 0 && <p className="text-sm text-gray-400 text-center py-8">No appointments found.</p>}
+          {loading && <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
+          {!loading && filtered.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-8">No appointments found.</p>}
           {!loading && filtered.map(appt => (
             <div key={appt._id} className="border rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {appt.doctor?.profileImage
                     ? <img src={appt.doctor.profileImage} className="w-9 h-9 rounded-full object-cover border" alt="doc" />
-                    : <div className="w-9 h-9 rounded-full bg-blue-50 border flex items-center justify-center"><UserCircle size={20} className="text-blue-300" /></div>
+                    : <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 border flex items-center justify-center"><UserCircle size={20} className="text-blue-300" /></div>
                   }
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
-                    <p className="text-xs text-blue-600">{appt.doctor?.specialty}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">{appt.doctor?.specialty}</p>
                   </div>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
               </div>
-              <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+              <div className="flex flex-wrap gap-3 text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 <span className="flex items-center gap-1"><CalendarDays size={11} /> {new Date(appt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 <span className="flex items-center gap-1"><Clock size={11} /> {appt.time}</span>
                 <span className="capitalize">· {appt.consultationType}</span>
               </div>
-              {appt.reason && <p className="text-xs text-gray-500">Reason: {appt.reason}</p>}
-              {appt.diagnosis && <p className="text-xs text-gray-500">Diagnosis: {appt.diagnosis}</p>}
+              {appt.reason && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Reason: {appt.reason}</p>}
+              {appt.diagnosis && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Diagnosis: {appt.diagnosis}</p>}
             </div>
           ))}
         </div>
@@ -171,30 +173,30 @@ const PrescriptionsModal = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <p className="font-semibold text-gray-900">My Prescriptions</p>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
+          <p className="font-semibold text-gray-900 dark:text-gray-100">My Prescriptions</p>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
         <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
-          {loading && <div className="flex items-center gap-2 text-gray-400 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
-          {!loading && appointments.length === 0 && <p className="text-sm text-gray-400 text-center py-8">No prescriptions yet.</p>}
+          {loading && <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
+          {!loading && appointments.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-8">No prescriptions yet.</p>}
           {!loading && appointments.map(appt => (
             <div key={appt._id} className="border rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
-                  <p className="text-xs text-gray-400">{new Date(appt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {appt.doctor?.specialty}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{new Date(appt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {appt.doctor?.specialty}</p>
                 </div>
-                {appt.diagnosis && <p className="text-xs text-gray-500 max-w-[140px] text-right">{appt.diagnosis}</p>}
+                {appt.diagnosis && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 max-w-[140px] text-right">{appt.diagnosis}</p>}
               </div>
               <div className="space-y-2">
                 {appt.prescription.map((p, i) => (
-                  <div key={i} className="bg-blue-50 rounded-lg px-3 py-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div key={i} className="bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 rounded-lg px-3 py-2 grid grid-cols-2 gap-x-4 gap-y-1">
                     <p className="text-xs font-semibold text-blue-800 col-span-2">{p.medicine}</p>
-                    {p.dosage && <p className="text-xs text-gray-500">Dosage: {p.dosage}</p>}
-                    {p.duration && <p className="text-xs text-gray-500">Duration: {p.duration}</p>}
-                    {p.notes && <p className="text-xs text-gray-400 col-span-2">{p.notes}</p>}
+                    {p.dosage && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Dosage: {p.dosage}</p>}
+                    {p.duration && <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Duration: {p.duration}</p>}
+                    {p.notes && <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 col-span-2">{p.notes}</p>}
                   </div>
                 ))}
               </div>
@@ -220,21 +222,21 @@ const JoinConsultationModal = ({ onClose, navigate }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
           <div className="flex items-center gap-2">
-            <Video size={18} className="text-purple-600" />
-            <p className="font-semibold text-gray-900">Join Consultation</p>
+            <Video size={18} className="text-purple-600 dark:text-purple-400" />
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Join Consultation</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
         <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
-          {loading && <div className="flex items-center gap-2 text-gray-400 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
+          {loading && <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 py-8 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
           {!loading && appointments.length === 0 && (
             <div className="text-center py-8 space-y-2">
               <Video size={32} className="text-gray-300 mx-auto" />
-              <p className="text-sm text-gray-400">No confirmed consultations available.</p>
-              <p className="text-xs text-gray-400">Appointments must be confirmed by the doctor before joining.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">No confirmed consultations available.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Appointments must be confirmed by the doctor before joining.</p>
             </div>
           )}
           {!loading && appointments.map(appt => (
@@ -242,15 +244,21 @@ const JoinConsultationModal = ({ onClose, navigate }) => {
               <div className="flex items-center gap-3">
                 {appt.doctor?.profileImage
                   ? <img src={appt.doctor.profileImage} className="w-10 h-10 rounded-full object-cover border" alt="doc" />
-                  : <div className="w-10 h-10 rounded-full bg-purple-50 border flex items-center justify-center"><UserCircle size={22} className="text-purple-300" /></div>
+                  : <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900/30 border flex items-center justify-center"><UserCircle size={22} className="text-purple-300" /></div>
                 }
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
-                  <p className="text-xs text-gray-400">{new Date(appt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {appt.time}</p>
-                  <p className="text-xs text-purple-600 capitalize">{appt.consultationType}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{new Date(appt.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {appt.time}</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 capitalize">{appt.consultationType}</p>
                 </div>
               </div>
               <div className="flex gap-2">
+                <button
+                  onClick={() => { onClose(); navigate(`/patient-consultation/${appt._id}`) }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 font-medium"
+                >
+                  Join Patient Consult
+                </button>
                 <button
                   onClick={() => { onClose(); navigate(`/video/${appt._id}`) }}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 font-medium"
@@ -304,21 +312,23 @@ const UploadReportsModal = ({ onClose }) => {
     setUploading(true)
     setError(null)
     try {
-      const base64s = await Promise.all(files.map(file => new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })))
+      // Process multiple files directly into Cloudinary
+      const cloudUrls = await Promise.all(files.map(async (file) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await apiFetch('/upload', getToken, { method: 'POST', body: formData })
+        return res.url
+      }))
+
       await apiFetch(`/patients/appointments/${selectedId}/reports`, getToken, {
         method: 'POST',
-        body: JSON.stringify({ reports: base64s }),
+        body: JSON.stringify({ reports: cloudUrls }),
       })
       setSuccess(true)
       setFiles([])
       if (inputRef.current) inputRef.current.value = ''
     } catch (err) {
-      setError(err.message)
+      setError(`Failed to process reports: ${err.message}`)
     } finally {
       setUploading(false)
     }
@@ -326,24 +336,24 @@ const UploadReportsModal = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
           <div className="flex items-center gap-2">
             <FileText size={18} className="text-orange-500" />
-            <p className="font-semibold text-gray-900">Upload Reports</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Upload Reports</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           {/* Select appointment */}
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Link to Appointment</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Link to Appointment</label>
             {loading ? (
-              <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 size={14} className="animate-spin" /> Loading...</div>
+              <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm"><Loader2 size={14} className="animate-spin" /> Loading...</div>
             ) : (
               <select
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={selectedId}
                 onChange={e => setSelectedId(e.target.value)}
               >
@@ -360,15 +370,15 @@ const UploadReportsModal = ({ onClose }) => {
           {/* File picker */}
           <div
             onClick={() => inputRef.current?.click()}
-            className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 transition-colors"
           >
             <FileText size={28} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
               {files.length > 0
-                ? <span className="text-blue-600 font-medium">{files.length} file{files.length > 1 ? 's' : ''} selected</span>
+                ? <span className="text-blue-600 dark:text-blue-400 font-medium">{files.length} file{files.length > 1 ? 's' : ''} selected</span>
                 : 'Click to select files'}
             </p>
-            <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG supported</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">PDF, JPG, PNG supported</p>
             <input ref={inputRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFiles} />
           </div>
 
@@ -376,20 +386,20 @@ const UploadReportsModal = ({ onClose }) => {
           {files.length > 0 && (
             <ul className="space-y-1">
               {files.map((f, i) => (
-                <li key={i} className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-1.5">
+                <li key={i} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-950 rounded-lg px-3 py-1.5">
                   <FileText size={12} className="text-orange-400 shrink-0" />
                   <span className="truncate">{f.name}</span>
-                  <span className="text-gray-400 shrink-0">({(f.size / 1024).toFixed(0)} KB)</span>
+                  <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 shrink-0">({(f.size / 1024).toFixed(0)} KB)</span>
                 </li>
               ))}
             </ul>
           )}
 
           {error && <p className="text-red-500 text-xs">{error}</p>}
-          {success && <p className="text-green-600 text-xs font-medium">✓ Reports uploaded successfully!</p>}
+          {success && <p className="text-green-600 dark:text-green-400 text-xs font-medium">✓ Reports uploaded successfully!</p>}
 
           <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Close</button>
+            <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-950">Close</button>
             <button
               onClick={handleUpload}
               disabled={uploading || files.length === 0}
@@ -455,10 +465,10 @@ const BookingModal = ({ onClose, onBooked }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <p className="font-semibold text-gray-900">Book Appointment</p>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
+          <p className="font-semibold text-gray-900 dark:text-gray-100">Book Appointment</p>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
 
         {bookedAppt ? (
@@ -467,22 +477,22 @@ const BookingModal = ({ onClose, onBooked }) => {
               <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
                 <CheckCircle size={28} className="text-green-500" />
               </div>
-              <p className="font-semibold text-gray-900">Appointment Booked!</p>
-              <p className="text-sm text-gray-500">Your request has been sent. You'll be notified once confirmed.</p>
+              <p className="font-semibold text-gray-900 dark:text-gray-100">Appointment Booked!</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Your request has been sent. You'll be notified once confirmed.</p>
             </div>
 
             {(form.consultationType === 'video' || form.consultationType === 'audio') && roomLink && (
-              <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 space-y-3">
+              <div className="bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900/30 border border-purple-200 rounded-xl p-4 space-y-3">
                 <p className="text-xs font-semibold text-purple-700 flex items-center gap-1.5">
                   <Video size={13} /> Video Call Room Link
                 </p>
                 <p className="text-xs text-purple-800 font-mono break-all">{roomLink}</p>
-                <p className="text-xs text-gray-500">Share this link with your doctor so you can both join the call instantly.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Share this link with your doctor so you can both join the call instantly.</p>
                 <div className="flex gap-2">
                   <button
                     onClick={copyLink}
                     className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                      copied ? 'bg-green-500 text-white' : 'bg-white border border-purple-300 text-purple-600 hover:bg-purple-50'
+                      copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-900 border border-purple-300 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900/30'
                     }`}
                   >
                     {copied ? '✓ Copied!' : 'Copy Link'}
@@ -505,9 +515,9 @@ const BookingModal = ({ onClose, onBooked }) => {
         ) : (
           <form onSubmit={handleBook} className="px-6 py-5 space-y-4">
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Select Doctor *</label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Select Doctor *</label>
               {loadingDocs ? (
-                <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 size={14} className="animate-spin" /> Loading doctors...</div>
+                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-sm"><Loader2 size={14} className="animate-spin" /> Loading doctors...</div>
               ) : (
                 <select
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -527,7 +537,7 @@ const BookingModal = ({ onClose, onBooked }) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Date *</label>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Date *</label>
                 <input
                   type="date"
                   min={new Date().toISOString().split('T')[0]}
@@ -538,7 +548,7 @@ const BookingModal = ({ onClose, onBooked }) => {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Time *</label>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Time *</label>
                 <select
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   value={form.time}
@@ -552,7 +562,7 @@ const BookingModal = ({ onClose, onBooked }) => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Consultation Type</label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Consultation Type</label>
               <select
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                 value={form.consultationType}
@@ -565,7 +575,7 @@ const BookingModal = ({ onClose, onBooked }) => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Reason for Visit</label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Reason for Visit</label>
               <input
                 type="text"
                 placeholder="e.g. Routine checkup"
@@ -576,7 +586,7 @@ const BookingModal = ({ onClose, onBooked }) => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Symptoms (optional)</label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Symptoms (optional)</label>
               <textarea
                 rows={2}
                 placeholder="Describe your symptoms..."
@@ -589,7 +599,7 @@ const BookingModal = ({ onClose, onBooked }) => {
             {bookError && <p className="text-red-500 text-xs">{bookError}</p>}
 
             <div className="flex gap-3 pt-1">
-              <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+              <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-950">
                 Cancel
               </button>
               <button
@@ -662,33 +672,33 @@ const DoctorBookingModal = ({ doctor, userId, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
           <div className="flex items-center gap-3">
             {doctor.profileImage
               ? <img src={doctor.profileImage} className="w-9 h-9 rounded-full object-cover border" alt="doc" />
-              : <div className="w-9 h-9 rounded-full bg-blue-50 border flex items-center justify-center text-blue-500 font-bold text-sm">{doctor.firstName?.[0]}{doctor.lastName?.[0]}</div>
+              : <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 border flex items-center justify-center text-blue-500 font-bold text-sm">{doctor.firstName?.[0]}{doctor.lastName?.[0]}</div>
             }
             <div>
-              <p className="text-sm font-semibold text-gray-900">{doctor.title} {doctor.firstName} {doctor.lastName}</p>
-              <p className="text-xs text-blue-600">{doctor.specialty}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{doctor.title} {doctor.firstName} {doctor.lastName}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400">{doctor.specialty}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={18} /></button>
         </div>
 
         {step === 1 && (
           <div className="px-6 py-5 space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Date *</label>
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Date *</label>
                 <input type="date" min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.date} onChange={set('date')} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Time *</label>
-                <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Time *</label>
+                <select className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={form.time} onChange={set('time')}>
                   <option value="">Select time</option>
                   {TIMES_LIST.map(t => <option key={t}>{t}</option>)}
@@ -696,25 +706,25 @@ const DoctorBookingModal = ({ doctor, userId, onClose }) => {
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Consultation Type</label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Consultation Type</label>
               <div className="grid grid-cols-3 gap-2">
                 {[{v:'video',label:'Video'},{v:'audio',label:'Audio'},{v:'in-person',label:'In-Person'}].map(({v,label}) => (
                   <button key={v} type="button" onClick={() => setForm(f => ({...f, consultationType: v}))}
                     className={`py-2 rounded-xl border text-xs font-medium transition-colors ${
-                      form.consultationType === v ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-500 hover:border-blue-300'
+                      form.consultationType === v ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:border-blue-300'
                     }`}>{label}</button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Reason</label>
+              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Reason</label>
               <input type="text" placeholder="e.g. Routine checkup"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={form.reason} onChange={set('reason')} />
             </div>
             {error && <p className="text-red-500 text-xs">{error}</p>}
             <div className="flex gap-3">
-              <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-950">Cancel</button>
               <button onClick={() => { if (!form.date || !form.time) return setError('Select date and time.'); setError(null); setStep(2) }}
                 className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Next →</button>
             </div>
@@ -723,15 +733,15 @@ const DoctorBookingModal = ({ doctor, userId, onClose }) => {
 
         {step === 2 && (
           <div className="px-6 py-5 space-y-4">
-            <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Doctor</span><span className="font-medium">{doctor.title} {doctor.firstName} {doctor.lastName}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Date</span><span className="font-medium">{new Date(form.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Time</span><span className="font-medium">{form.time}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Type</span><span className="font-medium capitalize">{form.consultationType}</span></div>
+            <div className="bg-gray-50 dark:bg-gray-950 rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Doctor</span><span className="font-medium">{doctor.title} {doctor.firstName} {doctor.lastName}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Date</span><span className="font-medium">{new Date(form.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Time</span><span className="font-medium">{form.time}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Type</span><span className="font-medium capitalize">{form.consultationType}</span></div>
             </div>
             {error && <p className="text-red-500 text-xs">{error}</p>}
             <div className="flex gap-3">
-              <button onClick={() => setStep(1)} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">← Back</button>
+              <button onClick={() => setStep(1)} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-950">← Back</button>
               <button onClick={handleBook} disabled={booking}
                 className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-60 flex items-center justify-center gap-2">
                 {booking ? <><Loader2 size={14} className="animate-spin" /> Booking...</> : 'Confirm'}
@@ -745,8 +755,8 @@ const DoctorBookingModal = ({ doctor, userId, onClose }) => {
             <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
               <CheckCircle size={28} className="text-green-500" />
             </div>
-            <p className="font-semibold text-gray-900">Appointment Booked!</p>
-            <p className="text-sm text-gray-500">Request sent to {doctor.firstName} {doctor.lastName}.</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Appointment Booked!</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Request sent to {doctor.firstName} {doctor.lastName}.</p>
             <button onClick={onClose} className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Done</button>
           </div>
         )}
@@ -755,12 +765,12 @@ const DoctorBookingModal = ({ doctor, userId, onClose }) => {
   )
 }
 
-const FindMyDoctorsModal = ({ onClose, navigate }) => {
+const FindMyDoctorsModal = ({ onClose, navigate, initialSpecialty = 'All' }) => {
   const { userId } = useAuth()
   const [doctors, setDoctors]     = useState([])
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
-  const [specialty, setSpecialty] = useState('All')
+  const [specialty, setSpecialty] = useState(initialSpecialty)
   const [booking, setBooking]     = useState(null)
 
   const fetchDoctors = (q = '', spec = '') => {
@@ -793,18 +803,18 @@ const FindMyDoctorsModal = ({ onClose, navigate }) => {
 
   const DoctorCard = ({ doc }) => {
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:shadow-md transition-shadow p-4">
         <div className="flex items-start gap-3 cursor-pointer" onClick={() => { onClose(); navigate(`/doctor/${doc.id}`) }}>
           {doc.profileImage
             ? <img src={doc.profileImage} alt="doctor" className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 shrink-0" />
-            : <div className="w-11 h-11 rounded-full bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-sm shrink-0">
+            : <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-sm shrink-0">
                 {doc.firstName?.[0]}{doc.lastName?.[0]}
               </div>
           }
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">{doc.title} {doc.firstName} {doc.lastName}</p>
-            <p className="text-xs text-blue-600">{doc.specialty}</p>
-            {doc.experience > 0 && <p className="text-xs text-gray-400 mt-0.5">{doc.experience} yrs experience</p>}
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{doc.title} {doc.firstName} {doc.lastName}</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400">{doc.specialty}</p>
+            {doc.experience > 0 && <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{doc.experience} yrs experience</p>}
           </div>
         </div>
         <div className="flex gap-2 mt-3">
@@ -827,33 +837,33 @@ const FindMyDoctorsModal = ({ onClose, navigate }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-50 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+      <div className="bg-gray-50 dark:bg-gray-950 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-white rounded-t-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 bg-white dark:bg-gray-900 rounded-t-2xl">
           <div className="flex items-center gap-2">
-            <Stethoscope size={18} className="text-blue-600" />
-            <p className="font-semibold text-gray-900">Find My Doctors</p>
+            <Stethoscope size={18} className="text-blue-600 dark:text-blue-400" />
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Find My Doctors</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
 
         {/* Search + filter */}
-        <div className="px-6 pt-4 pb-3 bg-white border-b space-y-3">
+        <div className="px-6 pt-4 pb-3 bg-white dark:bg-gray-900 border-b dark:border-gray-800 space-y-3">
           <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by name or specialty..."
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
           <div className="flex gap-2 flex-wrap">
             {dbSpecialties.map(s => (
               <button key={s} onClick={() => setSpecialty(s)}
                 className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  specialty === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400'
+                  specialty === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:border-blue-400'
                 }`}>{s}</button>
             ))}
           </div>
@@ -862,11 +872,11 @@ const FindMyDoctorsModal = ({ onClose, navigate }) => {
         {/* Doctor list */}
         <div className="overflow-y-auto flex-1 px-6 py-4">
           {loading ? (
-            <div className="flex items-center gap-2 text-gray-400 py-12 justify-center">
+            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 py-12 justify-center">
               <Loader2 size={18} className="animate-spin" /> Loading doctors...
             </div>
           ) : doctors.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-gray-400 gap-2">
+            <div className="flex flex-col items-center py-12 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 gap-2">
               <Stethoscope size={36} strokeWidth={1} />
               <p className="text-sm">No doctors found.</p>
             </div>
@@ -879,8 +889,8 @@ const FindMyDoctorsModal = ({ onClose, navigate }) => {
               {specialtyKeys.map(spec => (
                 <div key={spec}>
                   <div className="flex items-center gap-2 mb-3">
-                    <Stethoscope size={14} className="text-blue-600" />
-                    <p className="text-sm font-bold text-gray-800">{spec}</p>
+                    <Stethoscope size={14} className="text-blue-600 dark:text-blue-400" />
+                    <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{spec}</p>
                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{grouped[spec].length}</span>
                     <div className="flex-1 h-px bg-gray-200" />
                   </div>
@@ -928,48 +938,48 @@ const ChatStartModal = ({ onClose, navigate, user }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
           <div className="flex items-center gap-2">
-            <MessageSquare size={18} className="text-blue-600" />
-            <p className="font-semibold text-gray-900">Start a Chat</p>
+            <MessageSquare size={18} className="text-blue-600 dark:text-blue-400" />
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Start a Chat</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-gray-500">Enter your friend's details, share the link, and start chatting instantly.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Enter your friend's details, share the link, and start chatting instantly.</p>
 
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Friend's Name *</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Friend's Name *</label>
             <input
               type="text"
               placeholder="e.g. Dr. John"
               value={friendName}
               onChange={e => setFriendName(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Friend's Email (optional)</label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Friend's Email (optional)</label>
             <input
               type="email"
               placeholder="e.g. friend@gmail.com"
               value={friendEmail}
               onChange={e => setFriendEmail(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
 
           {friendName && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
-              <p className="text-xs text-blue-600 font-medium">Share this link with {friendName}:</p>
+            <div className="bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 border border-blue-200 rounded-xl p-3 space-y-2">
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Share this link with {friendName}:</p>
               <p className="text-xs text-blue-800 font-mono break-all">{chatLink}</p>
               <button
                 onClick={copyLink}
                 className={`w-full py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                  copied ? 'bg-green-500 text-white' : 'bg-white border border-blue-300 text-blue-600 hover:bg-blue-50'
+                  copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-900 border border-blue-300 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30'
                 }`}
               >
                 {copied ? '✓ Copied!' : 'Copy Link'}
@@ -978,7 +988,7 @@ const ChatStartModal = ({ onClose, navigate, user }) => {
           )}
 
           <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-950">Cancel</button>
             <button
               onClick={startChat}
               disabled={!friendName.trim()}
@@ -1008,16 +1018,46 @@ const PatientDashboard = () => {
   const [showJoinConsultation, setShowJoinConsultation] = useState(false)
   const [showUploadReports, setShowUploadReports]   = useState(false)
   const [showFindDoctors, setShowFindDoctors]       = useState(false)
+  const [findDoctorsFilter, setFindDoctorsFilter]   = useState('All')
   const [showChat, setShowChat]                     = useState(false)
   const [reminders, setReminders] = useState([])
   const [loadingReminders, setLoadingReminders] = useState(false)
   const [alarmAppt, setAlarmAppt] = useState(null)
   const [activePanel, setActivePanel] = useState(null)
+  const [incomingCall, setIncomingCall] = useState(null) // { apptId, doctorName, type }
   const [apptNotification, setApptNotification] = useState(null) // { status, doctorName, roomLink }
   const firedRef = useRef(new Set())
   const fileInputRef = useRef(null)
   const socketRef = useRef(null)
   useSyncUser()
+
+  // Poll for incoming call from doctor (doctor starts call from ConsultationPage)
+  useEffect(() => {
+    let interval
+    const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+    const checkIncoming = async () => {
+      try {
+        // Get confirmed appointments and check if any have an active signal offer
+        const appointments = await apiFetch('/patients/appointments', getToken)
+        const confirmed = appointments.filter(a => a.status === 'Confirmed')
+        for (const appt of confirmed) {
+          const res = await fetch(`${BASE}/signal/${appt._id}?role=patient&since=0`)
+          const data = await res.json()
+          if (data.offer) {
+            setIncomingCall({
+              apptId: appt._id,
+              doctorName: `${appt.doctor?.title || ''} ${appt.doctor?.firstName} ${appt.doctor?.lastName}`.trim(),
+              specialty: appt.doctor?.specialty,
+              type: appt.consultationType || 'video',
+            })
+            return
+          }
+        }
+      } catch {}
+    }
+    interval = setInterval(checkIncoming, 3000)
+    return () => clearInterval(interval)
+  }, [getToken])
 
   // Register patient with socket for real-time notifications
   useEffect(() => {
@@ -1107,10 +1147,10 @@ const PatientDashboard = () => {
   const avatarSrc = profileImage || user?.imageUrl
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
 
-      <header className="flex items-center justify-between px-8 py-4 border-b bg-white shadow-sm">
-        <div className="flex items-center gap-2 text-blue-600 font-bold text-xl">
+      <header className="flex items-center justify-between px-8 py-4 border-b dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+        <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl">
           <HeartPulse size={24} />
           MediConnect
         </div>
@@ -1120,15 +1160,17 @@ const PatientDashboard = () => {
           <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
             {avatarSrc
               ? <img src={avatarSrc} alt="profile" className="w-9 h-9 rounded-full object-cover border-2 border-blue-200" />
-              : <UserCircle size={36} className="text-gray-400" />
+              : <UserCircle size={36} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             }
             <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               {uploading ? <Loader2 size={14} className="text-white animate-spin" /> : <Camera size={14} className="text-white" />}
             </div>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
           </div>
+          <ThemeToggle />
           <Button
             variant="outline" size="sm"
+            className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:hover:bg-red-950"
             onClick={() => { localStorage.removeItem('mediconnect_role'); signOut({ redirectUrl: '/' }) }}
           >
             Sign Out
@@ -1139,44 +1181,50 @@ const PatientDashboard = () => {
       <main className="flex-1 px-6 py-8 max-w-6xl mx-auto w-full space-y-8">
 
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome, <span className="text-blue-600">{data?.patient?.firstName || user?.firstName}!</span>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Welcome, <span className="text-blue-600 dark:text-blue-400">{data?.patient?.firstName || user?.firstName}!</span>
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
             {data?.patient?.email && (
-              <span className="text-xs text-gray-400 mr-3">{data.patient.email}</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mr-3">{data.patient.email}</span>
             )}
             How are you feeling today?
           </p>
         </div>
 
+        <section>
+          <SymptomChecker setDashboardFilter={(spec) => {
+            setFindDoctorsFilter(spec);
+            setShowFindDoctors(true);
+          }} />
+        </section>
 
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {quickActions.map(({ icon: Icon, label, color, path }) => (
               <button
                 key={label}
                 onClick={() => handleQuickAction(label)}
-                className="flex flex-col items-center gap-3 p-5 bg-white rounded-2xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
+                className="flex flex-col items-center gap-3 p-5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group"
               >
                 <div className={`p-3 rounded-full ${color}`}><Icon size={22} strokeWidth={1.5} /></div>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 text-center">{label}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:text-blue-400 text-center">{label}</span>
               </button>
             ))}
           </div>
         </section>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+          <div className="bg-red-50 dark:bg-red-900/30 dark:bg-red-900/30 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
             Failed to load dashboard: {error}
           </div>
         )}
 
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Overview</h2>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Overview</h2>
           {loading ? (
-            <div className="flex items-center gap-2 text-gray-400 py-6">
+            <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 py-6">
               <Loader2 size={18} className="animate-spin" /> Loading...
             </div>
           ) : (() => {
@@ -1190,19 +1238,19 @@ const PatientDashboard = () => {
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <StatCard
                   icon={CalendarDays} label="Total Appointments" value={data?.stats?.total}
-                  color="bg-blue-50 text-blue-600"
+                  color="bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                   active={activePanel === 'total'}
                   onClick={() => setActivePanel(p => p === 'total' ? null : 'total')}
                 />
                 <StatCard
                   icon={CheckCircle} label="Completed" value={data?.stats?.completed}
-                  color="bg-green-50 text-green-600"
+                  color="bg-green-50 dark:bg-green-900/30 dark:bg-green-900/30 text-green-600 dark:text-green-400"
                   active={activePanel === 'completed'}
                   onClick={() => setActivePanel(p => p === 'completed' ? null : 'completed')}
                 />
                 <StatCard
                   icon={Clock} label="Pending" value={data?.stats?.pending}
-                  color="bg-yellow-50 text-yellow-600"
+                  color="bg-yellow-50 dark:bg-yellow-900/30 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400"
                   active={activePanel === 'pending'}
                   onClick={() => setActivePanel(p => p === 'pending' ? null : 'pending')}
                 />
@@ -1227,22 +1275,22 @@ const PatientDashboard = () => {
                   <CardTitle>Recent Appointments</CardTitle>
                   <button
                     onClick={() => setShowHistory(true)}
-                    className="text-xs text-blue-600 flex items-center gap-1 hover:underline">
+                    className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline">
                     View all <ChevronRight size={14} />
                   </button>
                 </div>
               </CardHeader>
               <CardContent>
                 {data?.recentAppointments?.length === 0 && (
-                  <p className="text-sm text-gray-400 py-2">No appointments yet.</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 py-2">No appointments yet.</p>
                 )}
                 {data?.recentAppointments?.map(appt => (
-                  <div key={appt._id} className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div key={appt._id} className="flex items-center justify-between py-3 border-b dark:border-gray-800 last:border-0">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         Dr. {appt.doctor?.firstName} {appt.doctor?.lastName}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {appt.doctor?.specialty && <span className="mr-2">{appt.doctor.specialty}</span>}
                         {new Date(appt.date).toLocaleDateString()} — {appt.time}
                       </p>
@@ -1259,27 +1307,27 @@ const PatientDashboard = () => {
       </main>
 
       {apptNotification && (
-        <div className="fixed top-5 right-5 z-[70] bg-white border-2 border-green-400 rounded-2xl shadow-2xl p-4 w-80 space-y-3">
+        <div className="fixed top-5 right-5 z-[70] bg-white dark:bg-gray-900 border-2 border-green-400 rounded-2xl shadow-2xl p-4 w-80 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
               <Bell size={18} className={`shrink-0 ${apptNotification.status === 'Confirmed' ? 'text-green-500' : 'text-red-500'}`} />
               <div>
-                <p className="font-semibold text-gray-900 text-sm">Appointment {apptNotification.status}!</p>
-                <p className="text-xs text-gray-600 mt-0.5">{apptNotification.doctorName}</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Appointment {apptNotification.status}!</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{apptNotification.doctorName}</p>
                 {apptNotification.status === 'Confirmed' && apptNotification.roomLink && (
-                  <p className="text-xs text-green-600 mt-1">Your video call room is ready!</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">Your video call room is ready!</p>
                 )}
               </div>
             </div>
-            <button onClick={() => setApptNotification(null)} className="text-gray-400 hover:text-gray-600 shrink-0"><X size={15} /></button>
+            <button onClick={() => setApptNotification(null)} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 shrink-0"><X size={15} /></button>
           </div>
           {apptNotification.status === 'Confirmed' && apptNotification.roomLink && (
             <div className="space-y-2">
-              <p className="text-xs text-gray-500 font-mono break-all">{apptNotification.roomLink}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-mono break-all">{apptNotification.roomLink}</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => navigator.clipboard.writeText(apptNotification.roomLink)}
-                  className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300"
                 >
                   Copy Link
                 </button>
@@ -1299,29 +1347,59 @@ const PatientDashboard = () => {
       )}
 
       {alarmAppt && (
-        <div className="fixed top-24 right-5 z-[60] bg-white border-2 border-yellow-400 rounded-2xl shadow-2xl p-4 w-80">
+        <div className="fixed top-24 right-5 z-[60] bg-white dark:bg-gray-900 border-2 border-yellow-400 rounded-2xl shadow-2xl p-4 w-80">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
               <Bell size={20} className="text-yellow-500 shrink-0" />
               <div>
-                <p className="font-semibold text-gray-900 text-sm">Appointment Now!</p>
-                <p className="text-xs text-gray-600 mt-0.5">{alarmAppt.doctor.title} {alarmAppt.doctor.firstName} {alarmAppt.doctor.lastName}</p>
-                <p className="text-xs text-blue-600">{alarmAppt.doctor.specialty}</p>
-                <p className="text-xs text-gray-400 mt-1">{alarmAppt.time} · {alarmAppt.consultationType}</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Appointment Now!</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{alarmAppt.doctor.title} {alarmAppt.doctor.firstName} {alarmAppt.doctor.lastName}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">{alarmAppt.doctor.specialty}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{alarmAppt.time} · {alarmAppt.consultationType}</p>
               </div>
             </div>
-            <button onClick={() => setAlarmAppt(null)} className="text-gray-400 hover:text-gray-600 shrink-0"><X size={16} /></button>
+            <button onClick={() => setAlarmAppt(null)} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300 shrink-0"><X size={16} /></button>
+          </div>
+        </div>
+      )}
+      {/* Incoming call notification from doctor */}
+      {incomingCall && (
+        <div className="fixed top-5 right-5 z-[70] bg-white dark:bg-gray-900 border-2 border-blue-500 rounded-2xl shadow-2xl p-4 w-80">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+              <Video size={20} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Doctor is calling!</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{incomingCall.doctorName}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400">{incomingCall.specialty}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 capitalize mt-0.5">{incomingCall.type} call</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => { setIncomingCall(null); navigate(`/patient-consultation/${incomingCall.apptId}`) }}
+                  className="flex-1 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg font-medium flex items-center justify-center gap-1"
+                >
+                  <Video size={12} /> Join
+                </button>
+                <button
+                  onClick={() => setIncomingCall(null)}
+                  className="flex-1 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 dark:text-red-400 text-xs rounded-lg font-medium"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
       {showJoinConsultation && <JoinConsultationModal onClose={() => setShowJoinConsultation(false)} navigate={navigate} />}
       {showUploadReports && <UploadReportsModal onClose={() => setShowUploadReports(false)} />}
-      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} appointments={data?.recentAppointments || []} />}
       {showPrescriptions && <PrescriptionsModal onClose={() => setShowPrescriptions(false)} />}
 
       {showChat && <ChatStartModal onClose={() => setShowChat(false)} navigate={navigate} user={user} />}
 
-      {showFindDoctors && <FindMyDoctorsModal onClose={() => setShowFindDoctors(false)} navigate={navigate} />}
+      {showFindDoctors && <FindMyDoctorsModal onClose={() => { setShowFindDoctors(false); setFindDoctorsFilter('All'); }} navigate={navigate} initialSpecialty={findDoctorsFilter} />}
 
       {showBooking && (
         <BookingModal
@@ -1332,29 +1410,29 @@ const PatientDashboard = () => {
 
       {showReminders && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <Bell size={18} className="text-yellow-500" />
-                <p className="font-semibold text-gray-900">Upcoming Consultations</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Upcoming Consultations</p>
               </div>
-              <button onClick={() => setShowReminders(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+              <button onClick={() => setShowReminders(false)} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
             </div>
             <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
               {loadingReminders && (
-                <div className="flex items-center gap-2 text-gray-400 py-6 justify-center">
+                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 py-6 justify-center">
                   <Loader2 size={16} className="animate-spin" /> Loading reminders...
                 </div>
               )}
               {!loadingReminders && reminders.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-6">No upcoming appointments.</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-6">No upcoming appointments.</p>
               )}
               {!loadingReminders && reminders.map(appt => {
                 const apptDate = new Date(appt.date)
                 const today = new Date()
                 today.setHours(0,0,0,0)
                 const diffDays = Math.ceil((apptDate - today) / (1000 * 60 * 60 * 24))
-                const urgency = diffDays === 0 ? 'bg-red-50 border-red-200' : diffDays <= 2 ? 'bg-yellow-50 border-yellow-200' : 'bg-blue-50 border-blue-200'
+                const urgency = diffDays === 0 ? 'bg-red-50 dark:bg-red-900/30 dark:bg-red-900/30 border-red-200' : diffDays <= 2 ? 'bg-yellow-50 dark:bg-yellow-900/30 dark:bg-yellow-900/30 border-yellow-200' : 'bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 border-blue-200'
                 const badge = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Tomorrow' : `In ${diffDays} days`
                 const badgeColor = diffDays === 0 ? 'bg-red-100 text-red-700' : diffDays <= 2 ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
                 return (
@@ -1363,21 +1441,21 @@ const PatientDashboard = () => {
                       <div className="flex items-center gap-3">
                         {appt.doctor.profileImage
                           ? <img src={appt.doctor.profileImage} className="w-10 h-10 rounded-full object-cover border" alt="doc" />
-                          : <div className="w-10 h-10 rounded-full bg-white border flex items-center justify-center"><UserCircle size={22} className="text-blue-300" /></div>
+                          : <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border flex items-center justify-center"><UserCircle size={22} className="text-blue-300" /></div>
                         }
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">{appt.doctor.title} {appt.doctor.firstName} {appt.doctor.lastName}</p>
-                          <p className="text-xs text-blue-600">{appt.doctor.specialty}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{appt.doctor.title} {appt.doctor.firstName} {appt.doctor.lastName}</p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400">{appt.doctor.specialty}</p>
                         </div>
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${badgeColor}`}>{badge}</span>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       <span className="flex items-center gap-1"><CalendarDays size={12} /> {apptDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                       <span className="flex items-center gap-1"><Clock size={12} /> {appt.time}</span>
                       <span className="flex items-center gap-1"><MapPin size={12} /> {appt.consultationType}</span>
                     </div>
-                    {appt.reason && <p className="mt-2 text-xs text-gray-400">Reason: {appt.reason}</p>}
+                    {appt.reason && <p className="mt-2 text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Reason: {appt.reason}</p>}
                     <div className="mt-2">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
                     </div>

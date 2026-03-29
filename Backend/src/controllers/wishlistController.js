@@ -8,7 +8,20 @@ const getWishlist = async (req, res) => {
     const productIds = rows[0]?.products || []
     if (!productIds.length) return res.json([])
     const { rows: products } = await pool.query(`SELECT * FROM products WHERE id = ANY($1::uuid[])`, [productIds])
-    res.json(products)
+    res.json(products.map(p => ({
+      ...p,
+      _id: p.id,
+      subCategory: p.sub_category,
+      discountPercent: parseFloat(p.discount_percent || 0),
+      sideEffects: p.side_effects,
+      requiresPrescription: p.requires_prescription,
+      reviewCount: p.review_count,
+      isActive: p.is_active,
+      price: parseFloat(p.price || 0),
+      rating: parseFloat(p.rating || 0),
+      createdAt: p.created_at,
+      updatedAt: p.updated_at
+    })))
   } catch (err) { res.status(500).json({ error: err.message }) }
 }
 

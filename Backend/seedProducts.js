@@ -1,38 +1,40 @@
-require('dotenv').config()
-const { Pool } = require('pg')
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const { Pool } = require('pg');
+require('dotenv').config();
 
-const products = [
-  { name: 'Paracetamol 500mg', brand: 'Calpol', category: 'medicines', price: 25, discountPercent: 10, stock: 200, description: 'Fever and pain relief tablet.', usage: 'Take 1-2 tablets every 4-6 hours as needed.', ingredients: 'Paracetamol 500mg', warnings: 'Do not exceed 8 tablets in 24 hours.', sideEffects: 'Rare: skin rash, liver issues with overdose.', requiresPrescription: false, rating: 4.5, reviewCount: 1200, tags: ['fever','pain','otc'] },
-  { name: 'Amoxicillin 500mg', brand: 'Mox', category: 'medicines', price: 85, discountPercent: 5, stock: 100, description: 'Antibiotic for bacterial infections.', usage: 'As prescribed by doctor.', ingredients: 'Amoxicillin trihydrate 500mg', warnings: 'Complete the full course.', sideEffects: 'Nausea, diarrhea, allergic reactions.', requiresPrescription: true, rating: 4.2, reviewCount: 450, tags: ['antibiotic','infection'] },
-  { name: 'Vitamin C 1000mg', brand: 'Limcee', category: 'vitamins', price: 120, discountPercent: 15, stock: 300, description: 'Immunity booster vitamin C supplement.', usage: 'Take 1 tablet daily after meals.', ingredients: 'Ascorbic Acid 1000mg', warnings: 'Consult doctor if pregnant.', sideEffects: 'High doses may cause stomach upset.', requiresPrescription: false, rating: 4.7, reviewCount: 2300, tags: ['immunity','vitamin','supplement'] },
-  { name: 'Digital Thermometer', brand: 'Omron', category: 'health-devices', price: 350, discountPercent: 20, stock: 80, description: 'Fast and accurate digital thermometer.', usage: 'Place under tongue or armpit for 60 seconds.', ingredients: 'N/A', warnings: 'Not for rectal use.', sideEffects: 'None', requiresPrescription: false, rating: 4.6, reviewCount: 890, tags: ['thermometer','fever','device'] },
-  { name: 'BP Monitor (Automatic)', brand: 'Omron', category: 'health-devices', price: 2499, discountPercent: 12, stock: 40, description: 'Automatic upper arm blood pressure monitor.', usage: 'Sit quietly for 5 minutes before measuring.', ingredients: 'N/A', warnings: 'Not a substitute for medical diagnosis.', sideEffects: 'None', requiresPrescription: false, rating: 4.4, reviewCount: 560, tags: ['bp','blood pressure','device'] },
-  { name: 'Hand Sanitizer 500ml', brand: 'Dettol', category: 'personal-care', price: 180, discountPercent: 8, stock: 500, description: '70% alcohol-based hand sanitizer.', usage: 'Apply 2-3ml on palms and rub for 20 seconds.', ingredients: 'Ethanol 70%, Glycerin', warnings: 'Flammable. Keep away from fire.', sideEffects: 'May cause skin dryness.', requiresPrescription: false, rating: 4.3, reviewCount: 3400, tags: ['sanitizer','hygiene','personal-care'] },
-  { name: 'Omega-3 Fish Oil', brand: 'HealthKart', category: 'supplements', price: 599, discountPercent: 18, stock: 150, description: 'High-potency omega-3 fatty acids for heart health.', usage: 'Take 2 capsules daily with meals.', ingredients: 'Fish Oil 1000mg (EPA 180mg, DHA 120mg)', warnings: 'Consult doctor if on blood thinners.', sideEffects: 'Fishy aftertaste, mild stomach upset.', requiresPrescription: false, rating: 4.5, reviewCount: 780, tags: ['omega3','heart','supplement'] },
-  { name: 'N95 Face Mask (Pack of 5)', brand: '3M', category: 'personal-care', price: 299, discountPercent: 0, stock: 250, description: 'NIOSH-approved N95 respirator mask.', usage: 'Wear over nose and mouth. Replace after 8 hours.', ingredients: 'N/A', warnings: 'Not for children under 2.', sideEffects: 'None', requiresPrescription: false, rating: 4.8, reviewCount: 1500, tags: ['mask','n95','protection'] },
-  { name: 'Glucometer Kit', brand: 'Accu-Chek', category: 'health-devices', price: 1299, discountPercent: 10, stock: 60, description: 'Blood glucose monitoring system with 10 test strips.', usage: 'Prick fingertip, apply blood to strip, read result.', ingredients: 'N/A', warnings: 'For external use only.', sideEffects: 'None', requiresPrescription: false, rating: 4.6, reviewCount: 420, tags: ['glucometer','diabetes','device'] },
-  { name: 'Multivitamin Daily', brand: 'Revital', category: 'vitamins', price: 450, discountPercent: 22, stock: 200, description: 'Complete daily multivitamin with minerals.', usage: 'Take 1 capsule daily after breakfast.', ingredients: 'Vitamins A, B, C, D, E, Zinc, Iron', warnings: 'Keep out of reach of children.', sideEffects: 'Mild nausea if taken on empty stomach.', requiresPrescription: false, rating: 4.4, reviewCount: 1100, tags: ['multivitamin','daily','supplement'] },
-]
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+const MOCK_PRODUCTS = [
+  { name: "Ibuprofen 400mg", brand: "Advil", category: "Pain Relief", subCategory: "NSAID", price: 12.99, discount: 10, stock: 150, rx: false, tags: ["headache", "pain", "fever"] },
+  { name: "Loratadine 10mg", brand: "Claritin", category: "Allergy", subCategory: "Antihistamine", price: 18.50, discount: 5, stock: 80, rx: false, tags: ["allergy", "sneezing", "pollen"] },
+  { name: "Amoxicillin 500mg", brand: "Generic", category: "Antibiotics", subCategory: "Penicillin", price: 25.00, discount: 0, stock: 40, rx: true, tags: ["infection", "bacteria", "prescription"] },
+  { name: "Vitamin C 1000mg", brand: "NatureMade", category: "Vitamins", subCategory: "Immune Support", price: 15.00, discount: 20, stock: 200, rx: false, tags: ["vitamin", "immunity", "health"] },
+  { name: "Melatonin 5mg", brand: "ZzzQuil", category: "Sleep Aids", subCategory: "Hormone", price: 9.99, discount: 0, stock: 120, rx: false, tags: ["sleep", "insomnia", "rest"] },
+  { name: "Hydrocortisone Cream 1%", brand: "Cortizone", category: "Skin Care", subCategory: "Topical Steroid", price: 7.50, discount: 15, stock: 65, rx: false, tags: ["rash", "itch", "skin"] },
+  { name: "Omeprazole 20mg", brand: "Prilosec", category: "Digestive Health", subCategory: "Antacid", price: 22.99, discount: 5, stock: 90, rx: false, tags: ["heartburn", "acid", "stomach"] },
+  { name: "Cetirizine 10mg", brand: "Zyrtec", category: "Allergy", subCategory: "Antihistamine", price: 19.99, discount: 10, stock: 110, rx: false, tags: ["allergy", "drowsy", "relief"] },
+  { name: "Acetaminophen 500mg", brand: "Tylenol", category: "Pain Relief", subCategory: "Analgesic", price: 11.49, discount: 0, stock: 300, rx: false, tags: ["fever", "pain", "headache"] },
+  { name: "Cough Syrup with Dextromethorphan", brand: "Robitussin", category: "Cold & Flu", subCategory: "Cough Suppressant", price: 13.99, discount: 0, stock: 85, rx: false, tags: ["cough", "cold", "throat"] },
+  { name: "Daily Multivitamin Gummies", brand: "Centrum", category: "Vitamins", subCategory: "Supplement", price: 16.50, discount: 25, stock: 140, rx: false, tags: ["gummies", "health", "daily"] },
+  { name: "Atorvastatin 20mg", brand: "Lipitor", category: "Heart Health", subCategory: "Statin", price: 45.00, discount: 0, stock: 45, rx: true, tags: ["cholesterol", "heart", "prescription"] },
+  { name: "Metformin 500mg", brand: "Glucophage", category: "Diabetes", subCategory: "Blood Sugar", price: 12.00, discount: 0, stock: 200, rx: true, tags: ["diabetes", "sugar", "prescription"] },
+  { name: "Thermometer Digital", brand: "Braun", category: "Medical Devices", subCategory: "Diagnostic", price: 29.99, discount: 15, stock: 30, rx: false, tags: ["fever", "temperature", "device"] },
+  { name: "Blood Pressure Monitor", brand: "Omron", category: "Medical Devices", subCategory: "Diagnostic", price: 49.99, discount: 20, stock: 25, rx: false, tags: ["blood pressure", "heart", "monitor"] }
+];
 
 async function seed() {
-  const client = await pool.connect()
   try {
-    let inserted = 0
-    for (const p of products) {
-      const { rowCount } = await client.query(
-        `INSERT INTO products (name, brand, category, description, usage, ingredients, warnings, side_effects, price, discount_percent, stock, requires_prescription, rating, review_count, tags)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-         ON CONFLICT DO NOTHING`,
-        [p.name, p.brand, p.category, p.description, p.usage, p.ingredients, p.warnings, p.sideEffects, p.price, p.discountPercent, p.stock, p.requiresPrescription, p.rating, p.reviewCount, JSON.stringify(p.tags)]
-      )
-      if (rowCount > 0) inserted++
+    for (const p of MOCK_PRODUCTS) {
+      await pool.query(
+        `INSERT INTO products (name, brand, category, sub_category, description, price, discount_percent, stock, requires_prescription, tags)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [p.name, p.brand, p.category, p.subCategory, \`High quality \${p.name} for daily medical needs.\`, p.price, p.discount, p.stock, p.rx, JSON.stringify(p.tags)]
+      );
     }
-    console.log(`✅ Seeded ${inserted} products (${products.length - inserted} already existed)`)
+    console.log("Seeded 15 new realistic medical products into the database!");
+  } catch (err) {
+    console.error(err);
   } finally {
-    client.release()
-    await pool.end()
+    pool.end();
   }
 }
-
-seed().catch(err => { console.error('❌', err.message); process.exit(1) })
+seed();

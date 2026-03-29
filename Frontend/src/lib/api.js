@@ -1,7 +1,12 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export const apiFetch = async (path, getTokenOrId, options = {}) => {
-  let headers = { 'Content-Type': 'application/json', ...options.headers }
+  let headers = { ...options.headers }
+  
+  // Set JSON content type only if body is NOT FormData
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json'
+  }
 
   if (typeof getTokenOrId === 'function') {
     try {

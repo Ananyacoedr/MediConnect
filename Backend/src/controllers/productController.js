@@ -1,5 +1,23 @@
 const pool = require('../db')
 
+const mapProduct = (p) => {
+  if (!p) return null
+  return {
+    ...p,
+    _id: p.id,
+    subCategory: p.sub_category,
+    discountPercent: parseFloat(p.discount_percent || 0),
+    sideEffects: p.side_effects,
+    requiresPrescription: p.requires_prescription,
+    reviewCount: p.review_count,
+    isActive: p.is_active,
+    price: parseFloat(p.price || 0),
+    rating: parseFloat(p.rating || 0),
+    createdAt: p.created_at,
+    updatedAt: p.updated_at
+  }
+}
+
 const getProducts = async (req, res) => {
   try {
     const { category, brand, minPrice, maxPrice, search, requiresPrescription, sort } = req.query
@@ -19,8 +37,10 @@ const getProducts = async (req, res) => {
 
     const sortMap = { price_asc: 'price ASC', price_desc: 'price DESC', rating: 'rating DESC', newest: 'created_at DESC' }
     const orderBy = sortMap[sort] || 'created_at DESC'
+    
+    // Default search to return everything correctly without alias conflicts, we map it manually
     const { rows } = await pool.query(`SELECT * FROM products WHERE ${conditions.join(' AND ')} ORDER BY ${orderBy}`, values)
-    res.json(rows)
+    res.json(rows.map(mapProduct))
   } catch (err) { res.status(500).json({ error: err.message }) }
 }
 
@@ -28,7 +48,7 @@ const getProduct = async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM products WHERE id = $1', [req.params.id])
     if (!rows.length) return res.status(404).json({ error: 'Product not found' })
-    res.json(rows[0])
+    res.json(mapProduct(rows[0]))
   } catch (err) { res.status(500).json({ error: err.message }) }
 }
 
@@ -40,7 +60,7 @@ const createProduct = async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
       [name, brand||'', category, subCategory||'', description||'', usage||'', ingredients||'', warnings||'', sideEffects||'', price, discountPercent||0, stock||0, JSON.stringify(images||[]), requiresPrescription||false, rating||0, reviewCount||0, JSON.stringify(tags||[])]
     )
-    res.status(201).json(rows[0])
+    res.status(201).json(mapProduct(rows[0]))
   } catch (err) { res.status(400).json({ error: err.message }) }
 }
 
@@ -53,7 +73,7 @@ const updateProduct = async (req, res) => {
     values.push(req.params.id)
     const { rows } = await pool.query(`UPDATE products SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${i} RETURNING *`, values)
     if (!rows.length) return res.status(404).json({ error: 'Product not found' })
-    res.json(rows[0])
+    res.json(mapProduct(rows[0]))
   } catch (err) { res.status(400).json({ error: err.message }) }
 }
 

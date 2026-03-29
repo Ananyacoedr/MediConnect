@@ -18,7 +18,7 @@ const TIMES = [
   '04:00 PM','04:30 PM','05:00 PM',
 ]
 
-const inp = 'w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+const inp = 'w-full border border-gray-200 dark:border-gray-800 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
 
 const DoctorPublicProfile = () => {
   const { id } = useParams()
@@ -96,7 +96,7 @@ const DoctorPublicProfile = () => {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 dark:bg-gray-900">
       <div className="text-center space-y-3">
         <Loader2 size={40} className="animate-spin text-blue-600 mx-auto" />
         <p className="text-sm text-gray-500">Loading doctor profile...</p>
@@ -105,8 +105,8 @@ const DoctorPublicProfile = () => {
   )
 
   if (error || !doctor) return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      <header className="flex items-center justify-between px-6 py-4 border-b bg-white dark:bg-gray-800 shadow-sm">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 dark:bg-gray-900">
+      <header className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex items-center gap-2 text-blue-600 font-bold text-xl"><HeartPulse size={24} /> MediConnect</div>
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600"><ArrowLeft size={16} /> Back</button>
       </header>
@@ -117,7 +117,7 @@ const DoctorPublicProfile = () => {
           </div>
           <p className="text-gray-700 dark:text-gray-300 font-medium">Could not load doctor profile</p>
           <p className="text-sm text-red-500 max-w-sm">{error}</p>
-          <p className="text-xs text-gray-400">Make sure the backend server is running on port 5000</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Make sure the backend server is running on port 5000</p>
           <Button onClick={() => navigate(-1)} className="flex items-center gap-2 mx-auto">
             <ArrowLeft size={14} /> Go Back
           </Button>
@@ -129,10 +129,10 @@ const DoctorPublicProfile = () => {
   const availableDays = doctor.availability?.filter(a => a.isAvailable) || []
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:bg-gray-900">
 
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+      <header className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 border-gray-200 dark:border-gray-800 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex items-center gap-2 text-blue-600 font-bold text-xl"><HeartPulse size={24} /> MediConnect</div>
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors">
           <ArrowLeft size={16} /> Back
@@ -168,7 +168,7 @@ const DoctorPublicProfile = () => {
 
                 {/* Specialty */}
                 {doctor.specialty && (
-                  <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-semibold">
                     <Stethoscope size={12} /> {doctor.specialty}
                   </span>
                 )}
@@ -235,10 +235,10 @@ const DoctorPublicProfile = () => {
                   { icon: Phone,      label: 'Phone',        value: doctor.phone       || '—' },
                   { icon: Mail,       label: 'Email',        value: doctor.email       || '—' },
                 ].map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="flex items-start gap-3 py-2.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                  <div key={label} className="flex items-start gap-3 py-2.5 border-b dark:border-gray-800 border-gray-100 dark:border-gray-700 last:border-0">
                     <Icon size={14} className="text-blue-500 mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400">{label}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-200 break-words">{value}</p>
                     </div>
                   </div>
@@ -255,13 +255,13 @@ const DoctorPublicProfile = () => {
               </CardHeader>
               <CardContent>
                 {availableDays.length === 0 ? (
-                  <p className="text-sm text-gray-400">No availability set.</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">No availability set.</p>
                 ) : (
                   <div className="space-y-2">
                     {availableDays.map(slot => (
-                      <div key={slot.day} className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                      <div key={slot.day} className="flex items-center justify-between py-1.5 border-b dark:border-gray-800 border-gray-100 dark:border-gray-700 last:border-0">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{slot.day}</span>
-                        <span className="text-xs text-blue-600 dark:text-blue-400 font-medium bg-blue-50 dark:bg-blue-900 px-2 py-0.5 rounded-full">
+                        <span className="text-xs text-blue-600 dark:text-blue-400 font-medium bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 px-2 py-0.5 rounded-full">
                           {slot.startTime} – {slot.endTime}
                         </span>
                       </div>
@@ -291,7 +291,7 @@ const DoctorPublicProfile = () => {
                   </div>
                 ) : bookStep === 0 ? (
                   <div className="text-center py-8 space-y-3">
-                    <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900 flex items-center justify-center mx-auto">
+                    <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 flex items-center justify-center mx-auto">
                       <CalendarPlus size={24} className="text-blue-600" />
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-300">Book a consultation with <strong>{doctor.title} {doctor.firstName} {doctor.lastName}</strong></p>
@@ -320,7 +320,7 @@ const DoctorPublicProfile = () => {
                         {[{v:'video',icon:Video,label:'Video'},{v:'audio',icon:Mic,label:'Audio'},{v:'in-person',icon:User,label:'In-Person'}].map(({v,icon:Icon,label}) => (
                           <button key={v} type="button" onClick={() => setForm(f => ({...f, consultationType: v}))}
                             className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-medium transition-all ${
-                              form.consultationType === v ? 'border-blue-500 bg-blue-50 dark:bg-blue-900 text-blue-600' : 'border-gray-200 dark:border-gray-600 text-gray-500 hover:border-blue-300'
+                              form.consultationType === v ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 text-blue-600' : 'border-gray-200 dark:border-gray-800 dark:border-gray-600 text-gray-500 hover:border-blue-300'
                             }`}>
                             <Icon size={16} strokeWidth={1.8} />{label}
                           </button>
@@ -345,7 +345,7 @@ const DoctorPublicProfile = () => {
                 ) : bookStep === 2 ? (
                   <div className="space-y-4">
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Confirm your appointment</p>
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 space-y-2.5 text-sm">
+                    <div className="bg-gray-50 dark:bg-gray-950 dark:bg-gray-700 rounded-xl p-4 space-y-2.5 text-sm">
                       {[
                         ['Doctor',    `${doctor.title} ${doctor.firstName} ${doctor.lastName}`],
                         ['Specialty', doctor.specialty || '—'],
@@ -376,7 +376,7 @@ const DoctorPublicProfile = () => {
                     </div>
                     <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg">Appointment Booked!</p>
                     <p className="text-sm text-gray-500">Request sent to <strong>{doctor.firstName} {doctor.lastName}</strong>. You'll be notified once confirmed.</p>
-                    <div className="bg-blue-50 dark:bg-blue-900 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-300 text-left space-y-1 max-w-xs mx-auto">
+                    <div className="bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-300 text-left space-y-1 max-w-xs mx-auto">
                       <p>📅 {new Date(form.date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
                       <p>🕐 {form.time} · <span className="capitalize">{form.consultationType}</span></p>
                     </div>
@@ -410,14 +410,14 @@ const DoctorPublicProfile = () => {
                 ) : (
                   <div className="space-y-4">
                     <label className={`flex items-center gap-3 cursor-pointer border-2 border-dashed rounded-xl px-4 py-5 transition-colors ${
-                      uploadFile ? 'border-blue-400 bg-blue-50 dark:bg-blue-900' : 'border-gray-200 dark:border-gray-600 hover:border-blue-300'
+                      uploadFile ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900' : 'border-gray-200 dark:border-gray-800 dark:border-gray-600 hover:border-blue-300'
                     }`}>
-                      <FileText size={22} className={uploadFile ? 'text-blue-500' : 'text-gray-400'} />
+                      <FileText size={22} className={uploadFile ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'} />
                       <div>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           {uploadFile ? uploadFile.name : 'Click to choose file'}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
                           {uploadFile ? `${(uploadFile.size / 1024).toFixed(1)} KB` : 'PDF, JPG, PNG up to 5MB'}
                         </p>
                       </div>

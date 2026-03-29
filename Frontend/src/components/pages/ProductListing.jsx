@@ -29,40 +29,40 @@ const ProductCard = ({ product, onAddToCart, wishlistIds, onToggleWishlist }) =>
   const wishlisted = wishlistIds.includes(product._id)
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 hover:shadow-md transition-all flex flex-col relative">
-      <button onClick={() => onToggleWishlist(product._id)} className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white shadow-sm border border-gray-100">
-        <Heart size={14} className={wishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400'} />
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:shadow-md transition-all flex flex-col relative">
+      <button onClick={(e) => { e.stopPropagation(); onToggleWishlist(product._id); }} className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white dark:bg-gray-900 shadow-sm border border-gray-100 hover:scale-110 active:scale-75 transition-all duration-200">
+        <Heart size={14} className={`${wishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400 dark:text-gray-500'} transition-colors duration-200`} />
       </button>
 
       <div onClick={() => navigate(`/pharmacy/product/${product._id}`)} className="cursor-pointer p-4 flex flex-col flex-1">
-        <div className="h-32 flex items-center justify-center bg-gray-50 rounded-lg mb-3">
+        <div className="h-32 flex items-center justify-center bg-gray-50 dark:bg-gray-950 rounded-lg mb-3">
           {product.images?.[0]
             ? <img src={product.images[0]} alt={product.name} className="h-full object-contain" />
             : <Pill size={40} className="text-blue-200" />
           }
         </div>
         {product.requiresPrescription && (
-          <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 rounded font-medium mb-1 w-fit">Rx Required</span>
+          <span className="text-[10px] bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 px-1.5 py-0.5 rounded font-medium mb-1 w-fit">Rx Required</span>
         )}
-        <p className="text-xs text-gray-400">{product.brand}</p>
-        <p className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1 mt-0.5">{product.name}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500">{product.brand}</p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 flex-1 mt-0.5">{product.name}</p>
         <div className="flex items-center gap-1 mt-1">
           <Star size={11} className="fill-yellow-400 text-yellow-400" />
           <span className="text-xs text-gray-500">{product.rating?.toFixed(1) || '—'} ({product.reviewCount})</span>
         </div>
         <div className="flex items-center gap-2 mt-2">
-          <span className="text-base font-bold text-gray-900">₹{discounted}</span>
+          <span className="text-base font-bold text-gray-900 dark:text-gray-100">₹{discounted}</span>
           {product.discountPercent > 0 && (
             <>
-              <span className="text-xs text-gray-400 line-through">₹{product.price}</span>
-              <span className="text-xs text-green-600 font-medium">{product.discountPercent}% off</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500 line-through">₹{product.price}</span>
+              <span className="text-xs text-green-600 dark:text-green-400 font-medium">{product.discountPercent}% off</span>
             </>
           )}
         </div>
       </div>
       <div className="px-4 pb-4">
         <button
-          onClick={() => onAddToCart(product)}
+          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
           className="w-full py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5"
         >
           <ShoppingCart size={13} /> Add to Cart
@@ -130,14 +130,26 @@ const ProductListing = () => {
 
   const handleToggleWishlist = async (productId) => {
     if (!isSignedIn) return navigate('/login')
-    const res = await apiFetch('/wishlist/toggle', getToken, { method: 'POST', body: JSON.stringify({ productId }) })
-    setWishlistIds(prev => res.wishlisted ? [...prev, productId] : prev.filter(id => id !== productId))
+    
+    // Instantly update UI (Optimistic Rendering)
+    const isCurrentlyWishlisted = wishlistIds.includes(productId)
+    setWishlistIds(prev => isCurrentlyWishlisted ? prev.filter(id => id !== productId) : [...prev, productId])
+
+    try {
+      const res = await apiFetch('/wishlist/toggle', getToken, { method: 'POST', body: JSON.stringify({ productId }) })
+      // Reconcile with UI
+      setWishlistIds(prev => res.wishlisted ? [...new Set([...prev, productId])] : prev.filter(id => id !== productId))
+    } catch {
+      // Revert if API crashes
+      setWishlistIds(prev => isCurrentlyWishlisted ? [...prev, productId] : prev.filter(id => id !== productId))
+      showToast('Error updating wishlist')
+    }
   }
 
   const setFilter = (key, val) => setFilters(f => ({ ...f, [key]: val }))
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <header className="bg-blue-600 text-white sticky top-0 z-40 shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
@@ -145,32 +157,38 @@ const ProductListing = () => {
             <HeartPulse size={22} /> MediConnect
           </div>
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               value={filters.search}
               onChange={e => setFilter('search', e.target.value)}
               placeholder="Search medicines, health products..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg text-gray-900 text-sm focus:outline-none"
+              className="w-full pl-9 pr-4 py-2 rounded-lg text-gray-900 dark:text-gray-100 text-sm focus:outline-none"
             />
           </div>
-          <button onClick={() => navigate('/pharmacy/cart')} className="relative">
-            <ShoppingCart size={20} />
-            {cartCount > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{cartCount}</span>}
-          </button>
+          <div className="flex items-center gap-4 shrink-0">
+            <button onClick={() => navigate('/pharmacy/wishlist')} className="relative hidden sm:flex items-center gap-1 text-sm hover:text-blue-200 text-white">
+              <Heart size={20} />
+              {wishlistIds.length > 0 && <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{wishlistIds.length}</span>}
+            </button>
+            <button onClick={() => navigate('/pharmacy/cart')} className="relative">
+              <ShoppingCart size={20} />
+              {cartCount > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{cartCount}</span>}
+            </button>
+          </div>
         </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-6 flex gap-6">
         {/* Sidebar Filters */}
         <aside className="w-56 shrink-0 hidden lg:block space-y-5">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-            <p className="font-semibold text-gray-900 flex items-center gap-2"><SlidersHorizontal size={15} /> Filters</p>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-4">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2"><SlidersHorizontal size={15} /> Filters</p>
 
             <div>
               <p className="text-xs font-medium text-gray-500 mb-2">Category</p>
               {CATEGORIES.map(c => (
                 <button key={c.key} onClick={() => setFilter('category', c.key)}
-                  className={`block w-full text-left text-sm px-2 py-1.5 rounded-lg mb-0.5 transition-colors ${filters.category === c.key ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  className={`block w-full text-left text-sm px-2 py-1.5 rounded-lg mb-0.5 transition-colors ${filters.category === c.key ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50'}`}>
                   {c.label}
                 </button>
               ))}
@@ -190,7 +208,7 @@ const ProductListing = () => {
               <p className="text-xs font-medium text-gray-500 mb-2">Prescription</p>
               {[{ val: '', label: 'All' }, { val: 'false', label: 'OTC Only' }, { val: 'true', label: 'Rx Required' }].map(o => (
                 <button key={o.val} onClick={() => setFilter('requiresPrescription', o.val)}
-                  className={`block w-full text-left text-sm px-2 py-1.5 rounded-lg mb-0.5 transition-colors ${filters.requiresPrescription === o.val ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  className={`block w-full text-left text-sm px-2 py-1.5 rounded-lg mb-0.5 transition-colors ${filters.requiresPrescription === o.val ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50'}`}>
                   {o.label}
                 </button>
               ))}
@@ -222,7 +240,7 @@ const ProductListing = () => {
           <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map(c => (
               <button key={c.key} onClick={() => setFilter('category', c.key)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${filters.category === c.key ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-blue-400'}`}>
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${filters.category === c.key ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-blue-400'}`}>
                 {c.label}
               </button>
             ))}
@@ -230,10 +248,10 @@ const ProductListing = () => {
 
           {loading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => <div key={i} className="bg-white rounded-xl border h-64 animate-pulse" />)}
+              {[...Array(8)].map((_, i) => <div key={i} className="bg-white dark:bg-gray-900 rounded-xl border h-64 animate-pulse" />)}
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-20 text-gray-400">
+            <div className="text-center py-20 text-gray-400 dark:text-gray-500">
               <Pill size={40} className="mx-auto mb-3 text-gray-200" />
               <p>No products found. Try adjusting your filters.</p>
             </div>
