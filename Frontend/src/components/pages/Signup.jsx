@@ -21,7 +21,7 @@ const Signup = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors">
       <div className="w-full flex flex-col items-center gap-3 px-4">
-        <div className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 max-w-sm w-full text-center">
+        <div className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 dark:border-gray-700 rounded-xl px-4 py-2 max-w-sm w-full text-center">
           💡 Password must be at least <strong>8 characters</strong> with a mix of letters and numbers.
         </div>
         <SignUp

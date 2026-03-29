@@ -47,7 +47,7 @@ const VideoCall = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
-      <header className="flex items-center gap-2 px-6 py-3 bg-gray-800 border-b border-gray-700 text-blue-400 font-bold">
+      <header className="flex items-center gap-2 px-6 py-3 bg-gray-800 border-b dark:border-gray-800 border-gray-700 text-blue-400 font-bold">
         <HeartPulse size={20} /> MediConnect — Video Consultation
       </header>
       <div ref={containerRef} className="flex-1 w-full" />

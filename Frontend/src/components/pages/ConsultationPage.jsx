@@ -18,7 +18,7 @@ const Section = ({ title, icon: Icon, children }) => (
   <Card>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
-        <Icon size={16} className="text-blue-600" strokeWidth={2} />
+        <Icon size={16} className="text-blue-600 dark:text-blue-400" strokeWidth={2} />
         {title}
       </CardTitle>
     </CardHeader>
@@ -127,15 +127,15 @@ const ConsultationPage = () => {
     : appt?.patientAge
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <Loader2 size={36} className="animate-spin text-blue-600" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 dark:bg-gray-900">
+      <Loader2 size={36} className="animate-spin text-blue-600 dark:text-blue-400" />
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:bg-gray-900 flex flex-col transition-colors">
 
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+      <header className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 border-gray-200 dark:border-gray-800 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/doctor-dashboard')}
@@ -143,7 +143,7 @@ const ConsultationPage = () => {
           >
             <ArrowLeft size={16} /> Dashboard
           </button>
-          <div className="flex items-center gap-2 text-blue-600 font-bold text-xl">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl">
             <HeartPulse size={22} /> MediConnect
           </div>
         </div>
@@ -179,7 +179,7 @@ const ConsultationPage = () => {
         </div>
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm">
+          <div className="mb-4 flex items-center gap-2 bg-red-50 dark:bg-red-900/30 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm">
             <AlertCircle size={15} /> {error}
           </div>
         )}
@@ -191,14 +191,14 @@ const ConsultationPage = () => {
 
             <Section title="Patient Details" icon={User}>
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-xl font-bold">
+                <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 dark:text-blue-300 text-xl font-bold">
                   {patient?.firstName?.[0]}{patient?.lastName?.[0]}
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
                     {patient?.firstName} {patient?.lastName}
                   </p>
-                  <p className="text-xs text-gray-400">{patient?.email}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{patient?.email}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -208,8 +208,8 @@ const ConsultationPage = () => {
                   { label: 'Phone',  value: patient?.phone || '—' },
                   { label: 'Type',   value: appt?.consultationType || 'video' },
                 ].map(({ label, value }) => (
-                  <div key={label} className="bg-gray-50 dark:bg-gray-700 rounded-xl px-3 py-2">
-                    <p className="text-xs text-gray-400">{label}</p>
+                  <div key={label} className="bg-gray-50 dark:bg-gray-950 dark:bg-gray-700 rounded-xl px-3 py-2">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{label}</p>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">{value}</p>
                   </div>
                 ))}
@@ -233,13 +233,13 @@ const ConsultationPage = () => {
                 <div className="flex flex-col gap-2">
                   {appt.uploadedReports.map((r, i) => (
                     <a key={i} href={r} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                      className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
                       <FileText size={14} /> Report {i + 1}
                     </a>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">No reports uploaded.</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">No reports uploaded.</p>
               )}
             </Section>
 
@@ -249,9 +249,9 @@ const ConsultationPage = () => {
           <div className="lg:col-span-2 flex flex-col gap-6">
 
             {/* Consultation Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-800 dark:border-gray-700 p-5">
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-                <Video size={16} className="text-blue-600" /> Consultation Actions
+                <Video size={16} className="text-blue-600 dark:text-blue-400" /> Consultation Actions
               </p>
 
               {/* Action buttons */}
@@ -260,7 +260,7 @@ const ConsultationPage = () => {
                   href={`/video/${id}?name=${encodeURIComponent(user?.firstName || 'Doctor')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex flex-col items-center gap-2 py-4 rounded-xl bg-gray-50 text-gray-500 ring-1 ring-gray-200 hover:ring-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                  className="flex flex-col items-center gap-2 py-4 rounded-xl bg-gray-50 dark:bg-gray-950 text-gray-500 ring-1 ring-gray-200 hover:ring-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all"
                 >
                   <Video size={22} strokeWidth={1.8} />
                   <span className="text-xs font-semibold">Video Call</span>
@@ -270,7 +270,7 @@ const ConsultationPage = () => {
                   href={`/video/${id}?name=${encodeURIComponent(user?.firstName || 'Doctor')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex flex-col items-center gap-2 py-4 rounded-xl bg-gray-50 text-gray-500 ring-1 ring-gray-200 hover:ring-green-300 hover:text-green-600 hover:bg-green-50 transition-all"
+                  className="flex flex-col items-center gap-2 py-4 rounded-xl bg-gray-50 dark:bg-gray-950 text-gray-500 ring-1 ring-gray-200 hover:ring-green-300 hover:text-green-600 hover:bg-green-50 transition-all"
                 >
                   <Phone size={22} strokeWidth={1.8} />
                   <span className="text-xs font-semibold">Audio Call</span>
@@ -281,8 +281,8 @@ const ConsultationPage = () => {
                   onClick={() => setShowChat(c => !c)}
                   className={`flex flex-col items-center gap-2 py-4 rounded-xl transition-all select-none ${
                     showChat
-                      ? 'bg-purple-50 text-purple-600 ring-2 ring-purple-400 shadow-md'
-                      : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 hover:ring-purple-300 hover:text-purple-600 hover:bg-purple-50'
+                      ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 ring-2 ring-purple-400 shadow-md'
+                      : 'bg-gray-50 dark:bg-gray-950 text-gray-500 ring-1 ring-gray-200 hover:ring-purple-300 hover:text-purple-600 hover:bg-purple-50'
                   }`}
                 >
                   <MessageSquare size={22} strokeWidth={1.8} />
@@ -291,14 +291,14 @@ const ConsultationPage = () => {
               </div>
 
               {/* Share room link */}
-              <div className="mb-4 flex items-center gap-2 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-xl px-4 py-2.5">
+              <div className="mb-4 flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-xl px-4 py-2.5">
                 <span className="text-xs text-blue-700 dark:text-blue-300 flex-1 truncate">
                   Share with patient: <span className="font-mono">{roomLink}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(roomLink)}
-                  className="text-xs text-blue-600 hover:underline shrink-0"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline shrink-0"
                 >
                   Copy
                 </button>
@@ -307,15 +307,15 @@ const ConsultationPage = () => {
               {/* Chat Panel */}
               {showChat && (
                 <div className="rounded-xl border border-purple-200 dark:border-purple-700 overflow-hidden flex flex-col" style={{ height: '320px' }}>
-                  <div className="bg-purple-50 dark:bg-purple-900 px-4 py-2.5 border-b border-purple-200 dark:border-purple-700 flex items-center gap-2">
-                    <MessageSquare size={14} className="text-purple-600 dark:text-purple-300" />
+                  <div className="bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900 px-4 py-2.5 border-b dark:border-gray-800 border-purple-200 dark:border-purple-700 flex items-center gap-2">
+                    <MessageSquare size={14} className="text-purple-600 dark:text-purple-400 dark:text-purple-300" />
                     <span className="text-xs font-semibold text-purple-700 dark:text-purple-200">
                       Chat with {patient?.firstName} {patient?.lastName}
                     </span>
                   </div>
                   <div className="flex-1 overflow-y-auto px-4 py-3 bg-white dark:bg-gray-800 flex flex-col gap-2">
                     {chatMessages.length === 0 && (
-                      <p className="text-xs text-gray-400 text-center mt-6">No messages yet. Start the conversation.</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-6">No messages yet. Start the conversation.</p>
                     )}
                     {chatMessages.map((msg, i) => (
                       <div key={i} className={`flex ${msg.from === 'doctor' ? 'justify-end' : 'justify-start'}`}>
@@ -325,13 +325,13 @@ const ConsultationPage = () => {
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-bl-sm'
                         }`}>
                           <p>{msg.text}</p>
-                          <p className={`text-[10px] mt-0.5 ${msg.from === 'doctor' ? 'text-blue-200' : 'text-gray-400'}`}>{msg.time}</p>
+                          <p className={`text-[10px] mt-0.5 ${msg.from === 'doctor' ? 'text-blue-200' : 'text-gray-400 dark:text-gray-500'}`}>{msg.time}</p>
                         </div>
                       </div>
                     ))}
                     <div ref={chatEndRef} />
                   </div>
-                  <div className="flex gap-2 px-3 py-2.5 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                  <div className="flex gap-2 px-3 py-2.5 border-t border-gray-200 dark:border-gray-800 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <input
                       className={inputCls}
                       placeholder="Type a message…"
@@ -376,7 +376,7 @@ const ConsultationPage = () => {
             <Section title="Prescriptions Issued" icon={ClipboardList}>
               <div className="flex flex-col gap-3">
                 {form.prescription.map((p, i) => (
-                  <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl relative">
+                  <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-50 dark:bg-gray-950 dark:bg-gray-700 rounded-xl relative">
                     <div>
                       <label className={labelCls}>Medicine</label>
                       <input value={p.medicine} onChange={e => setPrescription(i, 'medicine', e.target.value)} className={inputCls} placeholder="Medicine name" />
@@ -400,7 +400,7 @@ const ConsultationPage = () => {
                     )}
                   </div>
                 ))}
-                <button onClick={addMedicine} className="flex items-center gap-2 text-sm text-blue-600 hover:underline mt-1">
+                <button onClick={addMedicine} className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-1">
                   <Plus size={15} /> Add Medicine
                 </button>
               </div>
@@ -433,7 +433,7 @@ const ConsultationPage = () => {
             </Section>
 
             {success && (
-              <div className="flex items-center gap-2 text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 px-4 py-3 rounded-xl text-sm">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30 dark:bg-green-900 border border-green-200 dark:border-green-700 px-4 py-3 rounded-xl text-sm">
                 <CheckCircle2 size={15} /> Consultation saved successfully!
               </div>
             )}

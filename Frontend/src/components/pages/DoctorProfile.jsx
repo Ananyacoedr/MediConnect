@@ -52,7 +52,7 @@ export const ProfileSection = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">
-      <Loader2 size={28} className="animate-spin text-blue-600" />
+      <Loader2 size={28} className="animate-spin text-blue-600 dark:text-blue-400" />
     </div>
   )
 
@@ -68,7 +68,7 @@ export const ProfileSection = () => {
             <div className="relative">
               {form.profileImage
                 ? <img src={form.profileImage} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-blue-200" />
-                : <div className="w-20 h-20 rounded-full bg-blue-50 border-2 border-blue-200 flex items-center justify-center text-blue-400 text-2xl font-bold">
+                : <div className="w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-200 flex items-center justify-center text-blue-400 text-2xl font-bold">
                     {form.firstName?.[0]}{form.lastName?.[0]}
                   </div>
               }
@@ -79,7 +79,7 @@ export const ProfileSection = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Upload a photo</p>
-              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG up to 5MB</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">JPG, PNG up to 5MB</p>
               <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => fileRef.current.click()}>Choose File</Button>
             </div>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
@@ -140,8 +140,8 @@ export const ProfileSection = () => {
         </CardContent>
       </Card>
 
-      {error   && <p className="text-sm text-red-600 bg-red-50 border border-red-200 px-4 py-2 rounded-lg">{error}</p>}
-      {success && <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 px-4 py-2 rounded-lg text-sm"><CheckCircle2 size={15} /> Profile updated successfully!</div>}
+      {error   && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 px-4 py-2 rounded-lg">{error}</p>}
+      {success && <div className="flex items-center gap-2 text-green-700 bg-green-50 dark:bg-green-900/30 border border-green-200 px-4 py-2 rounded-lg text-sm"><CheckCircle2 size={15} /> Profile updated successfully!</div>}
 
       <Button type="submit" className="w-full" disabled={saving}>
         {saving ? <><Loader2 size={15} className="animate-spin" /> Updating...</> : 'Update Profile'}
@@ -153,9 +153,9 @@ export const ProfileSection = () => {
 const DoctorProfile = () => {
   const navigate = useNavigate()
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      <header className="flex items-center justify-between px-8 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
-        <div className="flex items-center gap-2 text-blue-600 font-bold text-xl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:bg-gray-900 flex flex-col">
+      <header className="flex items-center justify-between px-8 py-4 border-b dark:border-gray-800 border-gray-200 dark:border-gray-800 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+        <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl">
           <HeartPulse size={24} /> MediConnect
         </div>
         <div className="flex items-center gap-3">

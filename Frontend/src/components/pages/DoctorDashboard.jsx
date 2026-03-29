@@ -22,19 +22,19 @@ import {
 } from 'lucide-react'
 const statusStyle = {
   Confirmed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  Pending:   'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  Pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
   Cancelled: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
   Completed: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
 }
 
 const NAV_ITEMS = [
-  { key: 'overview',      icon: LayoutDashboard, label: 'Overview'          },
-  { key: 'profile',       icon: UserCircle,      label: 'Edit Profile'      },
-  { key: 'patients',      icon: Users,           label: 'My Patients'       },
-  { key: 'appointments',  icon: CalendarCheck,   label: 'View Appointments' },
-  { key: 'consultations', icon: Video,           label: 'Consultations'     },
-  { key: 'availability',  icon: CalendarClock,   label: 'My Availability'   },
-  { key: 'previous',      icon: History,         label: 'Past Consultations'},
+  { key: 'overview', icon: LayoutDashboard, label: 'Overview' },
+  { key: 'profile', icon: UserCircle, label: 'Edit Profile' },
+  { key: 'patients', icon: Users, label: 'My Patients' },
+  { key: 'appointments', icon: CalendarCheck, label: 'View Appointments' },
+  { key: 'consultations', icon: Video, label: 'Consultations' },
+  { key: 'availability', icon: CalendarClock, label: 'My Availability' },
+  { key: 'previous', icon: History, label: 'Past Consultations' },
 ]
 
 const SectionTitle = ({ children }) => (
@@ -49,14 +49,14 @@ const inputCls = 'border border-gray-300 dark:border-gray-600 rounded-lg px-2 py
 const ConsultationsSection = ({ navigate }) => {
   const { getToken } = useAuth()
   const [appointments, setAppointments] = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [search, setSearch]             = useState('')
-  const [filter, setFilter]             = useState('All')
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('All')
 
   useEffect(() => {
     apiFetch('/doctors/appointments', getToken)
       .then(setAppointments)
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   }, [getToken])
 
@@ -82,8 +82,8 @@ const ConsultationsSection = ({ navigate }) => {
           {appt.patient?.profileImage
             ? <img src={appt.patient.profileImage} className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 shrink-0" alt="patient" />
             : <div className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold shrink-0">
-                {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
-              </div>
+              {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
+            </div>
           }
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
@@ -119,9 +119,8 @@ const ConsultationsSection = ({ navigate }) => {
             <div className="flex gap-2">
               <button
                 onClick={copyLink}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                  copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-700 border border-indigo-300 text-indigo-600 hover:bg-indigo-50'
-                }`}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-700 border border-indigo-300 text-indigo-600 hover:bg-indigo-50'
+                  }`}
               >
                 {copied ? '✓ Copied!' : 'Copy Link'}
               </button>
@@ -158,9 +157,8 @@ const ConsultationsSection = ({ navigate }) => {
         <div className="flex gap-2">
           {['All', 'Confirmed', 'Pending'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-2 text-xs font-medium rounded-xl border transition-colors ${
-                filter === f ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-blue-400'
-              }`}>{f}</button>
+              className={`px-3 py-2 text-xs font-medium rounded-xl border transition-colors ${filter === f ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-blue-400'
+                }`}>{f}</button>
           ))}
         </div>
       </div>
@@ -345,22 +343,22 @@ const AvailabilitySection = ({ initialAvailability }) => {
 // ── Patients Section ─────────────────────────────────────────────────────
 const PatientsSection = ({ getToken, navigate }) => {
   const [appointments, setAppointments] = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [filter, setFilter]             = useState('today')
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('today')
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const data = await apiFetch('/doctors/appointments', getToken)
       setAppointments(data)
-    } catch {}
+    } catch { }
     finally { setLoading(false) }
   }, [getToken])
 
   useEffect(() => { load() }, [load])
 
-  const today = new Date(); today.setHours(0,0,0,0)
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
 
   const displayed = filter === 'today'
     ? appointments.filter(a => { const d = new Date(a.date); return d >= today && d < tomorrow })
@@ -378,11 +376,10 @@ const PatientsSection = ({ getToken, navigate }) => {
     <div className="space-y-4">
       <SectionTitle>My Patients</SectionTitle>
       <div className="flex gap-2">
-        {['today','all'].map(f => (
+        {['today', 'all'].map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              filter === f ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400'
-            }`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === f ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400'
+              }`}>
             {f === 'today' ? "Today's Patients" : 'All Patients'}
           </button>
         ))}
@@ -404,8 +401,8 @@ const PatientsSection = ({ getToken, navigate }) => {
                     {appt.patient?.profileImage
                       ? <img src={appt.patient.profileImage} className="w-10 h-10 rounded-full object-cover border" alt="patient" />
                       : <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold">
-                          {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
-                        </div>
+                        {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
+                      </div>
                     }
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient?.firstName} {appt.patient?.lastName}</p>
@@ -441,7 +438,7 @@ const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) =>
     try {
       const data = await apiFetch('/doctors/appointments', getToken)
       setAppointments(data)
-    } catch {}
+    } catch { }
     finally { setLoading(false) }
   }, [getToken])
 
@@ -471,11 +468,10 @@ const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) =>
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              filter === f
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === f
                 ? 'bg-blue-600 text-white'
                 : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-400'
-            }`}
+              }`}
           >
             {f} <span className="ml-1 opacity-70">({counts[f]})</span>
           </button>
@@ -508,8 +504,8 @@ const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) =>
                         {appt.patient?.profileImage
                           ? <img src={appt.patient.profileImage} className="w-10 h-10 rounded-full object-cover border shrink-0" alt="patient" />
                           : <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 text-sm font-bold shrink-0">
-                              {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
-                            </div>
+                            {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
+                          </div>
                         }
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
@@ -543,10 +539,10 @@ const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) =>
                       <div className="mt-4 ml-13 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {[
-                            { label: 'Email',  value: appt.patient?.email || '—' },
-                            { label: 'Phone',  value: appt.patient?.phone || '—' },
+                            { label: 'Email', value: appt.patient?.email || '—' },
+                            { label: 'Phone', value: appt.patient?.phone || '—' },
                             { label: 'Gender', value: appt.patient?.gender || '—' },
-                            { label: 'Age',    value: age ? `${age} yrs` : '—' },
+                            { label: 'Age', value: age ? `${age} yrs` : '—' },
                           ].map(({ label, value }) => (
                             <div key={label} className="bg-white dark:bg-gray-700 rounded-lg px-3 py-2">
                               <p className="text-xs text-gray-400">{label}</p>
@@ -682,12 +678,12 @@ const DoctorDashboard = () => {
   const doctor = data?.doctor
 
   const stats = [
-    { icon: Users,        label: 'Total Patients',         value: data?.stats?.totalPatients,                                    color: 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300'     },
-    { icon: BookCheck,    label: 'Successfully Appointed', value: data?.stats?.successfullyAppointed,                            color: 'bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-300'  },
-    { icon: Clock,        label: 'Pending Bookings',       value: data?.stats?.pendingBookings,                                  color: 'bg-yellow-50 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300'},
-    { icon: CalendarDays, label: 'Requested Appointments', value: data?.stats?.requestedAppointments,                            color: 'bg-purple-50 dark:bg-purple-900 text-purple-600 dark:text-purple-300'},
-    { icon: DollarSign,   label: 'Monthly Earnings',       value: data?.earnings ? `$${data.earnings.monthlyEarnings}` : '—',  color: 'bg-emerald-50 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300'},
-    { icon: ClipboardList,label: 'Prescriptions Issued',   value: data?.earnings?.prescriptionsIssued ?? '—',                  color: 'bg-pink-50 dark:bg-pink-900 text-pink-600 dark:text-pink-300'      },
+    { icon: Users, label: 'Total Patients', value: data?.stats?.totalPatients, color: 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' },
+    { icon: BookCheck, label: 'Successfully Appointed', value: data?.stats?.successfullyAppointed, color: 'bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-300' },
+    { icon: Clock, label: 'Pending Bookings', value: data?.stats?.pendingBookings, color: 'bg-yellow-50 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300' },
+    { icon: CalendarDays, label: 'Requested Appointments', value: data?.stats?.requestedAppointments, color: 'bg-purple-50 dark:bg-purple-900 text-purple-600 dark:text-purple-300' },
+    { icon: DollarSign, label: 'Monthly Earnings', value: data?.earnings ? `$${data.earnings.monthlyEarnings}` : '—', color: 'bg-emerald-50 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300' },
+    { icon: ClipboardList, label: 'Prescriptions Issued', value: data?.earnings?.prescriptionsIssued ?? '—', color: 'bg-pink-50 dark:bg-pink-900 text-pink-600 dark:text-pink-300' },
   ]
 
   return (
@@ -701,6 +697,13 @@ const DoctorDashboard = () => {
         <div className="flex items-center gap-3">
           <span className="text-sm px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium">Doctor</span>
           <ThemeToggle />
+          <Button
+            variant="outline" size="sm"
+            className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:hover:bg-red-950"
+            onClick={() => { localStorage.removeItem('mediconnect_role'); signOut({ redirectUrl: '/' }) }}
+          >
+            Sign Out
+          </Button>
         </div>
       </header>
 
@@ -746,15 +749,6 @@ const DoctorDashboard = () => {
             ))}
           </nav>
 
-          {/* Sign out */}
-          <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-700">
-            <button
-              onClick={() => { localStorage.removeItem('mediconnect_role'); signOut({ redirectUrl: '/' }) }}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900 transition-colors w-full"
-            >
-              <LogOut size={18} strokeWidth={1.8} /> Sign Out
-            </button>
-          </div>
         </aside>
 
         {/* ── MAIN CONTENT ── */}
@@ -812,29 +806,29 @@ const DoctorDashboard = () => {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Today's Schedule</CardTitle>
-                      <span className="text-xs text-gray-400">{new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}</span>
+                      <span className="text-xs text-gray-400">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                     </div>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
-                      <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={15} className="animate-spin"/> Loading...</div>
+                      <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={15} className="animate-spin" /> Loading...</div>
                     ) : data?.todayAppointments?.length === 0 ? (
                       <div className="flex flex-col items-center py-6 text-gray-400">
-                        <CalendarDays size={32} strokeWidth={1} className="mb-2"/>
+                        <CalendarDays size={32} strokeWidth={1} className="mb-2" />
                         <p className="text-sm">No appointments today</p>
                       </div>
                     ) : (
                       <div className="relative pl-4">
-                        <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-blue-100 dark:bg-blue-900"/>
+                        <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-blue-100 dark:bg-blue-900" />
                         {data?.todayAppointments?.map(appt => (
                           <div key={appt._id} className="relative flex gap-3 pb-4 last:pb-0">
-                            <div className="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-blue-500 bg-white dark:bg-gray-800"/>
+                            <div className="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-blue-500 bg-white dark:bg-gray-800" />
                             <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-xl px-3 py-2">
                               <div className="flex items-center justify-between">
                                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient.firstName} {appt.patient.lastName}</p>
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
                               </div>
-                              <p className="text-xs text-gray-400 mt-0.5"><Clock size={10} className="inline mr-1"/>{appt.time}</p>
+                              <p className="text-xs text-gray-400 mt-0.5"><Clock size={10} className="inline mr-1" />{appt.time}</p>
                             </div>
                           </div>
                         ))}
@@ -848,15 +842,15 @@ const DoctorDashboard = () => {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Upcoming Requests</CardTitle>
-                      <button onClick={() => setActive('appointments')} className="text-xs text-blue-600 flex items-center gap-1 hover:underline">View all <ChevronRight size={13}/></button>
+                      <button onClick={() => setActive('appointments')} className="text-xs text-blue-600 flex items-center gap-1 hover:underline">View all <ChevronRight size={13} /></button>
                     </div>
                   </CardHeader>
                   <CardContent>
                     {loading ? (
-                      <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={15} className="animate-spin"/> Loading...</div>
+                      <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={15} className="animate-spin" /> Loading...</div>
                     ) : data?.pendingRequests?.length === 0 ? (
                       <div className="flex flex-col items-center py-6 text-gray-400">
-                        <BookCheck size={32} strokeWidth={1} className="mb-2"/>
+                        <BookCheck size={32} strokeWidth={1} className="mb-2" />
                         <p className="text-sm">No pending requests</p>
                       </div>
                     ) : (
@@ -872,8 +866,8 @@ const DoctorDashboard = () => {
                             </div>
                           </div>
                           <div className="flex gap-1.5">
-                            <Button size="sm" className="h-7 px-2.5 text-xs" onClick={() => updateAppointmentStatus(appt._id,'Confirmed')}>✓</Button>
-                            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" onClick={() => updateAppointmentStatus(appt._id,'Cancelled')}>✕</Button>
+                            <Button size="sm" className="h-7 px-2.5 text-xs" onClick={() => updateAppointmentStatus(appt._id, 'Confirmed')}>✓</Button>
+                            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" onClick={() => updateAppointmentStatus(appt._id, 'Cancelled')}>✕</Button>
                           </div>
                         </div>
                       ))
@@ -892,10 +886,10 @@ const DoctorDashboard = () => {
                   </div>
                   <div className="flex gap-3">
                     <button onClick={() => navigate('/start-consultation')} className="flex items-center gap-2 bg-white text-blue-600 text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-50 transition-colors">
-                      <Video size={16}/> Video Call
+                      <Video size={16} /> Video Call
                     </button>
                     <button onClick={() => navigate('/start-consultation')} className="flex items-center gap-2 bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-blue-800 transition-colors">
-                      <Mic size={16}/> Audio Call
+                      <Mic size={16} /> Audio Call
                     </button>
                   </div>
                 </CardContent>

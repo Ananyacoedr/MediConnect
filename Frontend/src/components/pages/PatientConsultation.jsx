@@ -165,22 +165,22 @@ const PatientConsultation = () => {
   const doctor = appt?.doctor
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Loader2 size={36} className="animate-spin text-blue-600" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+      <Loader2 size={36} className="animate-spin text-blue-600 dark:text-blue-400" />
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
 
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b bg-white shadow-sm">
+      <header className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div className="flex items-center gap-4">
           <button onClick={() => { endCall(); navigate('/patient-dashboard') }}
             className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors">
             <ArrowLeft size={16} /> Dashboard
           </button>
-          <div className="flex items-center gap-2 text-blue-600 font-bold text-xl">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl">
             <HeartPulse size={22} /> MediConnect
           </div>
         </div>
@@ -192,18 +192,18 @@ const PatientConsultation = () => {
       <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-8 space-y-6">
 
         {/* Appointment Info */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
           <div className="flex items-center gap-4">
             {doctor?.profileImage
               ? <img src={doctor.profileImage} className="w-14 h-14 rounded-full object-cover border-2 border-blue-100" alt="doc" />
-              : <div className="w-14 h-14 rounded-full bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-lg">
+              : <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-lg">
                   {doctor?.firstName?.[0]}{doctor?.lastName?.[0]}
                 </div>
             }
             <div className="flex-1">
-              <p className="font-semibold text-gray-900 text-lg">{doctor?.title} {doctor?.firstName} {doctor?.lastName}</p>
-              <p className="text-sm text-blue-600">{doctor?.specialty}</p>
-              <div className="flex gap-4 mt-1 text-xs text-gray-400">
+              <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{doctor?.title} {doctor?.firstName} {doctor?.lastName}</p>
+              <p className="text-sm text-blue-600 dark:text-blue-400">{doctor?.specialty}</p>
+              <div className="flex gap-4 mt-1 text-xs text-gray-400 dark:text-gray-500">
                 <span className="flex items-center gap-1"><CalendarDays size={11} /> {new Date(appt?.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                 <span className="flex items-center gap-1"><Clock size={11} /> {appt?.time}</span>
                 <span className="capitalize">· {appt?.consultationType}</span>
@@ -216,27 +216,27 @@ const PatientConsultation = () => {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/30 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
             <AlertCircle size={15} /> {error}
           </div>
         )}
 
         {/* Call Panel */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5">
-          <p className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-            <Video size={16} className="text-blue-600" /> Join Consultation Call
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+            <Video size={16} className="text-blue-600 dark:text-blue-400" /> Join Consultation Call
           </p>
 
           {/* Status banner when waiting */}
           {callState === 'waiting' && (
-            <div className="mb-4 flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl text-sm">
+            <div className="mb-4 flex items-center gap-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl text-sm">
               <Loader2 size={15} className="animate-spin" />
               Waiting for the doctor to start the call… Keep this page open.
             </div>
           )}
 
           {callState === 'connected' && (
-            <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
+            <div className="mb-4 flex items-center gap-2 bg-green-50 dark:bg-green-900/30 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
               Connected · {fmt(duration)}
             </div>
@@ -246,12 +246,12 @@ const PatientConsultation = () => {
           {callState === 'idle' && (
             <div className="grid grid-cols-2 gap-3 mb-4">
               <button onClick={() => handleCallToggle('video')}
-                className="flex flex-col items-center gap-2 py-5 rounded-xl bg-blue-50 text-blue-600 border-2 border-blue-200 hover:border-blue-400 transition-all font-medium">
+                className="flex flex-col items-center gap-2 py-5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-2 border-blue-200 hover:border-blue-400 transition-all font-medium">
                 <Video size={24} strokeWidth={1.8} />
                 <span className="text-sm">Join Video Call</span>
               </button>
               <button onClick={() => handleCallToggle('audio')}
-                className="flex flex-col items-center gap-2 py-5 rounded-xl bg-green-50 text-green-600 border-2 border-green-200 hover:border-green-400 transition-all font-medium">
+                className="flex flex-col items-center gap-2 py-5 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-2 border-green-200 hover:border-green-400 transition-all font-medium">
                 <Phone size={24} strokeWidth={1.8} />
                 <span className="text-sm">Join Audio Call</span>
               </button>
@@ -260,14 +260,14 @@ const PatientConsultation = () => {
 
           {/* Video call UI */}
           {activeCall === 'video' && (
-            <div className="rounded-xl overflow-hidden border border-gray-200">
+            <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
               <div className="bg-gray-900 relative flex gap-2 p-3 min-h-[240px]">
                 {/* Remote (doctor) video */}
                 <div className="flex-1 rounded-lg bg-gray-800 overflow-hidden relative flex items-center justify-center">
                   {callState === 'connected' ? (
                     <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-gray-400 gap-3 w-full h-full py-8">
+                    <div className="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-3 w-full h-full py-8">
                       <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center">
                         <UserCircle size={48} className="text-gray-500" />
                       </div>
@@ -282,14 +282,14 @@ const PatientConsultation = () => {
                 <div className="w-28 rounded-lg bg-gray-700 overflow-hidden relative flex items-center justify-center">
                   <video ref={localVideoRef} autoPlay muted playsInline className={`w-full h-full object-cover ${camOff ? 'hidden' : ''}`} />
                   {camOff && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 gap-1">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 gap-1">
                       <VideoOff size={18} /><span className="text-xs">Cam off</span>
                     </div>
                   )}
                 </div>
               </div>
               <div className="flex items-center justify-between px-4 py-2 bg-gray-800">
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 dark:text-gray-500">
                   {callState === 'connected' ? `Connected · ${fmt(duration)}` : 'Waiting for doctor…'}
                 </span>
                 <div className="flex items-center gap-2">
@@ -312,14 +312,14 @@ const PatientConsultation = () => {
 
           {/* Audio call UI */}
           {activeCall === 'audio' && (
-            <div className="rounded-xl border border-green-200 bg-green-50 p-6">
+            <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/30 p-6">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-                  <Phone size={32} className="text-green-600" strokeWidth={1.5} />
+                  <Phone size={32} className="text-green-600 dark:text-green-400" strokeWidth={1.5} />
                 </div>
                 <div className="text-center">
                   <p className="font-semibold text-green-800">{doctor?.title} {doctor?.firstName} {doctor?.lastName}</p>
-                  <p className="text-xs text-green-600 flex items-center justify-center gap-1 mt-1">
+                  <p className="text-xs text-green-600 dark:text-green-400 flex items-center justify-center gap-1 mt-1">
                     {callState === 'connected'
                       ? <><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" /> Connected · {fmt(duration)}</>
                       : <><Loader2 size={12} className="animate-spin" /> Waiting for doctor…</>
@@ -330,7 +330,7 @@ const PatientConsultation = () => {
                 <div className="flex items-center gap-3">
                   <button onClick={toggleMic}
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      micMuted ? 'bg-red-100 text-red-600 border border-red-300' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      micMuted ? 'bg-red-100 text-red-600 dark:text-red-400 border border-red-300' : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-300 hover:bg-gray-50'
                     }`}>
                     {micMuted ? <MicOff size={14} /> : <Mic size={14} />} {micMuted ? 'Unmute' : 'Mute'}
                   </button>
@@ -346,23 +346,23 @@ const PatientConsultation = () => {
 
         {/* Appointment details */}
         {appt?.symptoms && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Your Symptoms</p>
-            <p className="text-sm text-gray-600">{appt.symptoms}</p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Your Symptoms</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{appt.symptoms}</p>
           </div>
         )}
 
         {appt?.consultationNotes && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Doctor's Notes</p>
-            <p className="text-sm text-gray-600">{appt.consultationNotes}</p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Doctor's Notes</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{appt.consultationNotes}</p>
           </div>
         )}
 
         {appt?.diagnosis && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Diagnosis</p>
-            <p className="text-sm text-gray-600">{appt.diagnosis}</p>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Diagnosis</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{appt.diagnosis}</p>
           </div>
         )}
 

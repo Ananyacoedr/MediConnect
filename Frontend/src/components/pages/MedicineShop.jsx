@@ -108,10 +108,10 @@ const MedicineShop = () => {
   }, {})
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:bg-gray-900 flex flex-col transition-colors">
 
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
+      <header className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 border-gray-200 dark:border-gray-800 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-30">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors">
             <ArrowLeft size={16} /> Back
@@ -123,7 +123,7 @@ const MedicineShop = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setCartOpen(true)}
-            className="relative flex items-center gap-1.5 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
+            className="relative flex items-center gap-1.5 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
           >
             <ShoppingCart size={15} />
             Cart
@@ -138,7 +138,7 @@ const MedicineShop = () => {
       </header>
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-800 border-gray-200 dark:border-gray-800 dark:border-gray-700 px-6">
         <div className="flex gap-6 max-w-6xl mx-auto">
           {[
             { id: 'shop', label: 'Medicine Shop', icon: Pill },
@@ -162,13 +162,13 @@ const MedicineShop = () => {
       <div className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
 
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm mb-6">
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/30 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-xl text-sm mb-6">
             <AlertCircle size={15} /> {error}
           </div>
         )}
 
         {ordered && (
-          <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 px-4 py-3 rounded-xl text-sm mb-6">
+          <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/30 dark:bg-green-900 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 px-4 py-3 rounded-xl text-sm mb-6">
             <PackageCheck size={15} /> Order placed! Your medicines will be delivered within 24–48 hours.
           </div>
         )}
@@ -184,11 +184,11 @@ const MedicineShop = () => {
             </div>
 
             {loadingPx ? (
-              <div className="flex items-center gap-2 text-gray-400 py-12 justify-center">
+              <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 py-12 justify-center">
                 <Loader2 size={18} className="animate-spin" /> Loading prescriptions...
               </div>
             ) : prescriptions.length === 0 ? (
-              <div className="flex flex-col items-center py-20 text-gray-400 gap-3">
+              <div className="flex flex-col items-center py-20 text-gray-400 dark:text-gray-500 gap-3">
                 <Stethoscope size={48} strokeWidth={1} />
                 <p className="text-base font-medium">No prescriptions found</p>
                 <p className="text-sm text-center max-w-xs">Complete a consultation with a doctor to get prescriptions and order medicines.</p>
@@ -203,14 +203,14 @@ const MedicineShop = () => {
                       {/* Prescription header */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                          <div className="p-2 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 rounded-lg">
                             <Stethoscope size={18} className="text-blue-600 dark:text-blue-300" />
                           </div>
                           <div>
                             <p className="font-semibold text-gray-900 dark:text-gray-100">
                               {appt.doctor?.title} {appt.doctor?.firstName} {appt.doctor?.lastName}
                             </p>
-                            <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                            <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
                               <CalendarDays size={11} />
                               {new Date(appt.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                               {appt.doctor?.specialty && <> · {appt.doctor.specialty}</>}
@@ -269,12 +269,12 @@ const MedicineShop = () => {
                                 {/* Card bottom */}
                                 <div className="px-4 py-3 space-y-3">
                                   {p.notes && (
-                                    <p className="text-xs text-gray-400 italic">{p.notes}</p>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 italic">{p.notes}</p>
                                   )}
 
                                   {cartItem ? (
                                     <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                                      <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-800 dark:border-gray-600 rounded-lg overflow-hidden">
                                         <button onClick={() => updateQty(cartItem._id, -1)} className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                           <Minus size={12} />
                                         </button>
@@ -288,7 +288,7 @@ const MedicineShop = () => {
                                       </button>
                                     </div>
                                   ) : (
-                                    <p className="text-xs text-gray-400">Click "Add All to Cart" to order</p>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500">Click "Add All to Cart" to order</p>
                                   )}
                                 </div>
                               </CardContent>
@@ -313,11 +313,11 @@ const MedicineShop = () => {
             </div>
 
             {loadingOrders ? (
-              <div className="flex items-center gap-2 text-gray-400 py-12 justify-center">
+              <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 py-12 justify-center">
                 <Loader2 size={18} className="animate-spin" /> Loading orders...
               </div>
             ) : Object.keys(groupedOrders).length === 0 ? (
-              <div className="flex flex-col items-center py-20 text-gray-400 gap-3">
+              <div className="flex flex-col items-center py-20 text-gray-400 dark:text-gray-500 gap-3">
                 <ShoppingBag size={48} strokeWidth={1} />
                 <p className="text-base font-medium">No orders yet</p>
                 <p className="text-sm">Your ordered medicines will appear here.</p>
@@ -331,25 +331,25 @@ const MedicineShop = () => {
                       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                         <CalendarDays size={14} className="text-blue-500" /> {date}
                       </p>
-                      <span className="text-xs text-gray-400">{items.length} item{items.length !== 1 ? 's' : ''} · ₹{total}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{items.length} item{items.length !== 1 ? 's' : ''} · ₹{total}</span>
                     </div>
                     <Card>
                       <CardContent className="p-0 divide-y divide-gray-100 dark:divide-gray-700">
                         {items.map(item => (
                           <div key={item._id} className="flex items-center gap-4 px-4 py-3">
-                            <div className="p-2 bg-green-50 dark:bg-green-900 rounded-lg shrink-0">
+                            <div className="p-2 bg-green-50 dark:bg-green-900/30 dark:bg-green-900 rounded-lg shrink-0">
                               <Pill size={16} className="text-green-600 dark:text-green-300" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item.medicine}</p>
-                              <p className="text-xs text-gray-400">{item.dosage} · {item.duration}</p>
-                              <p className="text-xs text-gray-400">Prescribed by {item.doctorName}</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">{item.dosage} · {item.duration}</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">Prescribed by {item.doctorName}</p>
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-0.5">
                                 <IndianRupee size={12} />{(item.price || 0) * item.quantity}
                               </p>
-                              <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500">Qty: {item.quantity}</p>
                             </div>
                             <span className="text-[10px] bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shrink-0">
                               <CheckCircle2 size={10} /> Ordered
@@ -372,22 +372,22 @@ const MedicineShop = () => {
           <div className="flex-1 bg-black/40" onClick={() => setCartOpen(false)} />
           <div className="w-full max-w-md bg-white dark:bg-gray-800 flex flex-col shadow-2xl">
             {/* Drawer header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between px-5 py-4 border-b dark:border-gray-800 border-gray-200 dark:border-gray-800 dark:border-gray-700">
               <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
                 <ShoppingCart size={18} className="text-blue-600" /> Cart ({cartCount})
               </div>
-              <button onClick={() => setCartOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+              <button onClick={() => setCartOpen(false)} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-200">
                 <X size={20} />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {loadingCart ? (
-                <div className="flex items-center gap-2 text-gray-400 py-8 justify-center">
+                <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500 py-8 justify-center">
                   <Loader2 size={16} className="animate-spin" /> Loading...
                 </div>
               ) : inStockItems.length === 0 && outOfStock.length === 0 ? (
-                <div className="flex flex-col items-center py-16 text-gray-400 gap-3">
+                <div className="flex flex-col items-center py-16 text-gray-400 dark:text-gray-500 gap-3">
                   <ShoppingCart size={40} strokeWidth={1} />
                   <p className="text-sm">Cart is empty</p>
                   <p className="text-xs text-center">Add medicines from your prescriptions above.</p>
@@ -396,18 +396,18 @@ const MedicineShop = () => {
                 <>
                   {inStockItems.map(item => (
                     <div key={item._id} className="flex items-center gap-3 border border-gray-100 dark:border-gray-700 rounded-xl p-3">
-                      <div className="p-2 bg-blue-50 dark:bg-blue-900 rounded-lg shrink-0">
+                      <div className="p-2 bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900 rounded-lg shrink-0">
                         <Pill size={15} className="text-blue-600 dark:text-blue-300" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item.medicine}</p>
-                        <p className="text-xs text-gray-400">{item.dosage}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{item.dosage}</p>
                         <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 mt-0.5">
                           <IndianRupee size={11} />{(item.price || 0) * item.quantity}
-                          {item.price > 0 && <span className="text-gray-400 font-normal ml-1">(₹{item.price} × {item.quantity})</span>}
+                          {item.price > 0 && <span className="text-gray-400 dark:text-gray-500 font-normal ml-1">(₹{item.price} × {item.quantity})</span>}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden shrink-0">
+                      <div className="flex items-center gap-1 border border-gray-200 dark:border-gray-800 dark:border-gray-600 rounded-lg overflow-hidden shrink-0">
                         <button onClick={() => updateQty(item._id, -1)} className="px-1.5 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
                           <Minus size={11} />
                         </button>
@@ -429,7 +429,7 @@ const MedicineShop = () => {
                       </p>
                       {outOfStock.map(item => (
                         <div key={item._id} className="flex items-center gap-3 border border-orange-200 dark:border-orange-700 rounded-xl p-3 opacity-70">
-                          <div className="p-2 bg-orange-50 dark:bg-orange-900 rounded-lg shrink-0">
+                          <div className="p-2 bg-orange-50 dark:bg-orange-900/30 dark:bg-orange-900 rounded-lg shrink-0">
                             <Pill size={15} className="text-orange-500" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -452,7 +452,7 @@ const MedicineShop = () => {
 
             {/* Drawer footer */}
             {inStockItems.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-700 px-5 py-4 space-y-3 bg-white dark:bg-gray-800">
+              <div className="border-t border-gray-200 dark:border-gray-800 dark:border-gray-700 px-5 py-4 space-y-3 bg-white dark:bg-gray-800">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500 dark:text-gray-400">Subtotal ({cartCount} items)</span>
                   <span className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-0.5">

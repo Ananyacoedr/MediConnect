@@ -13,6 +13,8 @@ const cartRoutes         = require('./src/routes/cart')
 const productRoutes      = require('./src/routes/product')
 const orderRoutes        = require('./src/routes/order')
 const wishlistRoutes     = require('./src/routes/wishlist')
+const aiRoutes           = require('./src/routes/aiRoute')
+const uploadRoutes       = require('./src/routes/upload')
 
 const app    = express()
 const server = http.createServer(app)
@@ -29,6 +31,8 @@ app.use('/api/cart',          cartRoutes)
 app.use('/api/products',      productRoutes)
 app.use('/api/orders',        orderRoutes)
 app.use('/api/wishlist',      wishlistRoutes)
+app.use('/api/ai',            aiRoutes)
+app.use('/api/upload',        uploadRoutes)
 
 // ── Socket.io Real-time Signaling ──────────────────────────────────────────
 const onlineUsers = {}

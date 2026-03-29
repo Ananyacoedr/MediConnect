@@ -1,6 +1,7 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthenticateWithRedirectCallback, useAuth } from '@clerk/clerk-react'
 import { Component } from 'react'
+import ThemeToggle from './components/ThemeToggle'
 
 class ErrorBoundary extends Component {
   state = { error: null }
@@ -58,9 +59,20 @@ const ProtectedRoute = ({ children }) => {
   return children
 }
 
+const GlobalThemeToggle = () => {
+  const location = useLocation()
+  if (['/patient-dashboard', '/doctor-dashboard'].includes(location.pathname)) return null
+  return (
+    <div className="fixed bottom-6 right-6 z-[9999] bg-white dark:bg-gray-800 rounded-full shadow-2xl border border-gray-200 dark:border-gray-700 p-1 opacity-90 hover:opacity-100 transition-opacity">
+      <ThemeToggle />
+    </div>
+  )
+}
+
 function App() {
   return (
     <ErrorBoundary>
+      <GlobalThemeToggle />
       <Routes>
         {/* SSO callback — MUST be outside any auth guard, handles Gmail/OAuth redirect */}
         <Route
