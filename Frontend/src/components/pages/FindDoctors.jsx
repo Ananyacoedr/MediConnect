@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
   HeartPulse, ArrowLeft, Search, Loader2, X,
   MapPin, Stethoscope, Star, CalendarPlus,
-  Video, User, CheckCircle, Copy, Check
+  Video, Mic, User, CheckCircle, Copy, Check
 } from 'lucide-react'
 
 const SPECIALTIES = [
@@ -40,7 +40,7 @@ const BookingModal = ({ doctor, userId, onClose }) => {
       await apiFetch('/patients/appointments/book', userId, {
         method: 'POST',
         body: JSON.stringify({
-          doctorId: doctor._id,
+          doctorId: doctor.id,
           date: form.date,
           time: form.time,
           reason: form.reason,
@@ -238,7 +238,7 @@ const FindDoctors = () => {
   const DoctorCard = ({ doc }) => {
     const [copied, setCopied] = useState(false)
 
-    const roomURL = `${window.location.origin}/video/room_${doc._id}`
+    const roomURL = `${window.location.origin}/video/room_${doc.id}`
 
     const copyLink = () => {
       navigator.clipboard.writeText(roomURL)
@@ -249,7 +249,7 @@ const FindDoctors = () => {
     return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="pt-5 pb-5">
-        <div className="flex items-start gap-3 cursor-pointer" onClick={() => navigate(`/doctor/${doc._id}`)}>
+        <div className="flex items-start gap-3 cursor-pointer" onClick={() => navigate(`/doctor/${doc.id}`)}>
           {doc.profileImage
             ? <img src={doc.profileImage} alt="doctor" className="w-12 h-12 rounded-full object-cover border-2 border-blue-100 shrink-0" />
             : <div className="w-12 h-12 rounded-full bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-base shrink-0">
@@ -276,11 +276,11 @@ const FindDoctors = () => {
         </div>
         <div className="flex gap-2 mt-3">
           <Button size="sm" className="flex-1 flex items-center gap-1.5"
-            onClick={() => navigate(`/doctor/${doc._id}`)}>
+            onClick={() => navigate(`/doctor/${doc.id}`)}>
             <CalendarPlus size={13} /> Book
           </Button>
           <button
-            onClick={() => navigate(`/video/room_${doc._id}?name=${encodeURIComponent(`${doc.title || ''} ${doc.firstName} ${doc.lastName}`.trim())}`)}
+            onClick={() => navigate(`/video/room_${doc.id}?name=${encodeURIComponent(`${doc.title || ''} ${doc.firstName} ${doc.lastName}`.trim())}`)}
             className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors"
           >
             <Video size={13} /> Video Call
@@ -354,7 +354,7 @@ const FindDoctors = () => {
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map(doc => <DoctorCard key={doc._id} doc={doc} />)}
+              {filtered.map(doc => <DoctorCard key={doc.id} doc={doc} />)}
             </div>
           </div>
         ) : (
@@ -376,7 +376,7 @@ const FindDoctors = () => {
                     className="text-xs text-blue-600 hover:underline shrink-0">View all →</button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {grouped[spec].map(doc => <DoctorCard key={doc._id} doc={doc} />)}
+                  {grouped[spec].map(doc => <DoctorCard key={doc.id} doc={doc} />)}
                 </div>
               </div>
             ))}

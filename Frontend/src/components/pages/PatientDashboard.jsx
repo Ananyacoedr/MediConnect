@@ -523,7 +523,7 @@ const BookingModal = ({ onClose, onBooked }) => {
                 >
                   <option value="">Choose a doctor</option>
                   {doctors.map(d => (
-                    <option key={d._id} value={d._id}>
+                    <option key={d.id} value={d.id}>
                       {d.title} {d.firstName} {d.lastName}{d.specialty ? ` — ${d.specialty}` : ''}
                     </option>
                   ))}
@@ -659,7 +659,7 @@ const DoctorBookingModal = ({ doctor, userId, onClose }) => {
     try {
       await apiFetch('/patients/appointments/book', userId, {
         method: 'POST',
-        body: JSON.stringify({ doctorId: doctor._id, ...form }),
+        body: JSON.stringify({ doctorId: doctor.id, ...form }),
       })
       setStep(3)
     } catch (err) { setError(err.message) }
@@ -800,7 +800,7 @@ const FindMyDoctorsModal = ({ onClose, navigate }) => {
   const DoctorCard = ({ doc }) => {
     return (
       <div className="bg-white rounded-2xl border border-gray-200 hover:shadow-md transition-shadow p-4">
-        <div className="flex items-start gap-3 cursor-pointer" onClick={() => { onClose(); navigate(`/doctor/${doc._id}`) }}>
+        <div className="flex items-start gap-3 cursor-pointer" onClick={() => { onClose(); navigate(`/doctor/${doc.id}`) }}>
           {doc.profileImage
             ? <img src={doc.profileImage} alt="doctor" className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 shrink-0" />
             : <div className="w-11 h-11 rounded-full bg-blue-50 border-2 border-blue-100 flex items-center justify-center text-blue-500 font-bold text-sm shrink-0">
@@ -821,7 +821,7 @@ const FindMyDoctorsModal = ({ onClose, navigate }) => {
             <CalendarPlus size={12} /> Book
           </button>
           <button
-            onClick={() => { onClose(); navigate(`/video/room_${doc._id}`) }}
+            onClick={() => { onClose(); navigate(`/video/room_${doc.id}`) }}
             className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition-colors"
           >
             <Video size={12} /> Video Call

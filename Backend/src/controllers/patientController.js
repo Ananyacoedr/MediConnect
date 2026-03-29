@@ -1,16 +1,16 @@
-const Patient = require('../models/Patient')
-const Appointment = require('../models/Appointment')
-const Doctor = require('../models/Doctor')
+const pool = require('../db')
 
 const syncPatient = async (req, res) => {
   try {
     const { clerkId, firstName, lastName, email, profileImage } = req.body
-    const patient = await Patient.findOneAndUpdate(
-      { clerkId },
-      { $set: { profileImage: profileImage || '' }, $setOnInsert: { clerkId, firstName, lastName, email } },
-      { upsert: true, returnDocument: 'after' }
+    const { rows } = await pool.query(
+      `INSERT INTO patients (clerk_id, first_name, last_name, email, profile_image)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (clerk_id) DO UPDATE SET profile_image = EXCLUDED.profile_image, updated_at = NOW()
+       RETURNING *`,
+      [clerkId, firstName, lastName, email, profileImage || '']
     )
-    res.json(patient)
+    res.json(rows[0])
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -18,9 +18,9 @@ const syncPatient = async (req, res) => {
 
 const getMe = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ clerkId: req.auth.userId })
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    res.json(patient)
+    const { rows } = await pool.query('SELECT * FROM patients WHERE clerk_id = $1', [req.auth.userId])
+    if (!rows.length) return res.status(404).json({ error: 'Patient not found' })
+    res.json(rows[0])
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -28,15 +28,26 @@ const getMe = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const allowed = ['firstName', 'lastName', 'phone', 'dob', 'gender', 'profileImage']
-    const update = {}
-    allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k] })
-    const patient = await Patient.findOneAndUpdate(
-      { clerkId: req.auth.userId },
-      { $set: update },
-      { returnDocument: 'after' }
+    const colMap = {
+      firstName: 'first_name', lastName: 'last_name', phone: 'phone',
+      dob: 'dob', gender: 'gender', profileImage: 'profile_image',
+    }
+    const fields = []
+    const values = []
+    let i = 1
+    Object.keys(colMap).forEach(k => {
+      if (req.body[k] !== undefined) {
+        fields.push(`${colMap[k]} = $${i++}`)
+        values.push(req.body[k])
+      }
+    })
+    if (!fields.length) return res.status(400).json({ error: 'No fields to update' })
+    values.push(req.auth.userId)
+    const { rows } = await pool.query(
+      `UPDATE patients SET ${fields.join(', ')}, updated_at = NOW() WHERE clerk_id = $${i} RETURNING *`,
+      values
     )
-    res.json(patient)
+    res.json(rows[0])
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -44,13 +55,11 @@ const updateProfile = async (req, res) => {
 
 const updateProfileImage = async (req, res) => {
   try {
-    const { profileImage } = req.body
-    const patient = await Patient.findOneAndUpdate(
-      { clerkId: req.auth.userId },
-      { $set: { profileImage } },
-      { returnDocument: 'after' }
+    const { rows } = await pool.query(
+      'UPDATE patients SET profile_image = $1, updated_at = NOW() WHERE clerk_id = $2 RETURNING *',
+      [req.body.profileImage, req.auth.userId]
     )
-    res.json(patient)
+    res.json(rows[0])
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -58,26 +67,30 @@ const updateProfileImage = async (req, res) => {
 
 const getDashboard = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ clerkId: req.auth.userId })
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
+    const { rows: pRows } = await pool.query('SELECT * FROM patients WHERE clerk_id = $1', [req.auth.userId])
+    if (!pRows.length) return res.status(404).json({ error: 'Patient not found' })
+    const patient = pRows[0]
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const [total, completed, pending, recentAppointments] = await Promise.all([
-      Appointment.countDocuments({ patient: patient._id }),
-      Appointment.countDocuments({ patient: patient._id, status: 'Completed' }),
-      Appointment.countDocuments({ patient: patient._id, status: 'Pending' }),
-      Appointment.find({ patient: patient._id })
-        .populate('doctor', 'firstName lastName specialty profileImage')
-        .sort({ date: -1 })
-        .limit(5),
+    const [totalRes, completedRes, pendingRes, recentRes] = await Promise.all([
+      pool.query('SELECT COUNT(*) AS cnt FROM appointments WHERE patient_id = $1', [patient.id]),
+      pool.query("SELECT COUNT(*) AS cnt FROM appointments WHERE patient_id = $1 AND status = 'Completed'", [patient.id]),
+      pool.query("SELECT COUNT(*) AS cnt FROM appointments WHERE patient_id = $1 AND status = 'Pending'", [patient.id]),
+      pool.query(
+        `SELECT a.*, d.first_name, d.last_name, d.specialty, d.profile_image AS doctor_profile_image, d.title
+         FROM appointments a JOIN doctors d ON d.id = a.doctor_id
+         WHERE a.patient_id = $1 ORDER BY a.date DESC LIMIT 5`,
+        [patient.id]
+      ),
     ])
 
     res.json({
       patient,
-      stats: { total, completed, pending },
-      recentAppointments,
+      stats: {
+        total:     parseInt(totalRes.rows[0].cnt),
+        completed: parseInt(completedRes.rows[0].cnt),
+        pending:   parseInt(pendingRes.rows[0].cnt),
+      },
+      recentAppointments: recentRes.rows,
     })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -87,42 +100,30 @@ const getDashboard = async (req, res) => {
 const bookAppointment = async (req, res) => {
   try {
     const { doctorId, date, time, reason, symptoms, consultationType } = req.body
-    const patient = await Patient.findOne({ clerkId: req.auth.userId })
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    const appointment = await Appointment.create({
-      doctor: doctorId,
-      patient: patient._id,
-      date: new Date(date),
-      time,
-      reason: reason || '',
-      symptoms: symptoms || '',
-      consultationType: consultationType || 'in-person',
-      status: 'Pending',
-    })
-    const populated = await appointment.populate([
-      { path: 'doctor', select: 'firstName lastName specialty clerkId title' },
-      { path: 'patient', select: 'firstName lastName' },
-    ])
+    const { rows: pRows } = await pool.query('SELECT id, clerk_id FROM patients WHERE clerk_id = $1', [req.auth.userId])
+    if (!pRows.length) return res.status(404).json({ error: 'Patient not found' })
+
+    const { rows } = await pool.query(
+      `INSERT INTO appointments (doctor_id, patient_id, date, time, reason, symptoms, consultation_type, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'Pending') RETURNING *`,
+      [doctorId, pRows[0].id, date, time, reason || '', symptoms || '', consultationType || 'in-person']
+    )
+    const appt = rows[0]
+    const { rows: dRows } = await pool.query('SELECT first_name, last_name, specialty, clerk_id, title FROM doctors WHERE id = $1', [appt.doctor_id])
+    const doc = dRows[0]
 
     // Notify doctor via socket
     const io = req.app.get('io')
     const onlineUsers = req.app.get('onlineUsers')
-    const doctorSocketId = onlineUsers[populated.doctor.clerkId]
-    console.log(`[Booking] Doctor clerkId: ${populated.doctor.clerkId}`)
-    console.log(`[Booking] Online users:`, Object.keys(onlineUsers))
-    console.log(`[Booking] Doctor socket:`, doctorSocketId)
+    const doctorSocketId = onlineUsers[doc?.clerk_id]
     if (doctorSocketId) {
       io.to(doctorSocketId).emit('new-booking', {
-        appointmentId: populated._id,
-        patientName: `${patient.firstName} ${patient.lastName}`,
+        appointmentId: appt.id,
+        patientName: `${pRows[0].first_name || ''} ${pRows[0].last_name || ''}`.trim(),
         date, time, reason, consultationType,
       })
-      console.log(`[Booking] Notification sent to doctor`)
-    } else {
-      console.log(`[Booking] Doctor NOT online - no notification sent`)
     }
-
-    res.status(201).json(populated)
+    res.status(201).json({ ...appt, ...doc })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -130,12 +131,17 @@ const bookAppointment = async (req, res) => {
 
 const getMyAppointments = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ clerkId: req.auth.userId })
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    const appointments = await Appointment.find({ patient: patient._id })
-      .populate('doctor', 'firstName lastName specialty profileImage location title')
-      .sort({ date: -1 })
-    res.json(appointments)
+    const { rows: pRows } = await pool.query('SELECT id FROM patients WHERE clerk_id = $1', [req.auth.userId])
+    if (!pRows.length) return res.status(404).json({ error: 'Patient not found' })
+
+    const { rows } = await pool.query(
+      `SELECT a.*, d.first_name, d.last_name, d.specialty, d.profile_image AS doctor_profile_image,
+              d.location AS doctor_location, d.title
+       FROM appointments a JOIN doctors d ON d.id = a.doctor_id
+       WHERE a.patient_id = $1 ORDER BY a.date DESC`,
+      [pRows[0].id]
+    )
+    res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -143,17 +149,17 @@ const getMyAppointments = async (req, res) => {
 
 const getReminders = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ clerkId: req.auth.userId })
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    const now = new Date()
-    const reminders = await Appointment.find({
-      patient: patient._id,
-      status: { $in: ['Pending', 'Confirmed'] },
-      date: { $gte: now },
-    })
-      .populate('doctor', 'firstName lastName specialty profileImage title')
-      .sort({ date: 1 })
-    res.json(reminders)
+    const { rows: pRows } = await pool.query('SELECT id FROM patients WHERE clerk_id = $1', [req.auth.userId])
+    if (!pRows.length) return res.status(404).json({ error: 'Patient not found' })
+
+    const { rows } = await pool.query(
+      `SELECT a.*, d.first_name, d.last_name, d.specialty, d.profile_image AS doctor_profile_image, d.title
+       FROM appointments a JOIN doctors d ON d.id = a.doctor_id
+       WHERE a.patient_id = $1 AND a.status IN ('Pending','Confirmed') AND a.date >= CURRENT_DATE
+       ORDER BY a.date ASC`,
+      [pRows[0].id]
+    )
+    res.json(rows)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -161,16 +167,19 @@ const getReminders = async (req, res) => {
 
 const uploadReport = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ clerkId: req.auth.userId })
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    const { reports } = req.body // array of base64 strings
-    const appointment = await Appointment.findOneAndUpdate(
-      { _id: req.params.id, patient: patient._id },
-      { $push: { uploadedReports: { $each: reports } } },
-      { new: true }
-    ).populate('doctor', 'firstName lastName specialty')
-    if (!appointment) return res.status(404).json({ error: 'Appointment not found' })
-    res.json(appointment)
+    const { rows: pRows } = await pool.query('SELECT id FROM patients WHERE clerk_id = $1', [req.auth.userId])
+    if (!pRows.length) return res.status(404).json({ error: 'Patient not found' })
+
+    const { reports } = req.body
+    const { rows } = await pool.query(
+      `UPDATE appointments
+       SET uploaded_reports = uploaded_reports || $1::jsonb, updated_at = NOW()
+       WHERE id = $2 AND patient_id = $3 RETURNING *`,
+      [JSON.stringify(reports), req.params.id, pRows[0].id]
+    )
+    if (!rows.length) return res.status(404).json({ error: 'Appointment not found' })
+    const { rows: dRows } = await pool.query('SELECT first_name, last_name, specialty FROM doctors WHERE id = $1', [rows[0].doctor_id])
+    res.json({ ...rows[0], ...dRows[0] })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -178,15 +187,20 @@ const uploadReport = async (req, res) => {
 
 const getAppointmentById = async (req, res) => {
   try {
-    const patient = await Patient.findOne({ clerkId: req.auth.userId })
-    if (!patient) return res.status(404).json({ error: 'Patient not found' })
-    const appointment = await Appointment.findOne({ _id: req.params.id, patient: patient._id })
-      .populate('doctor', 'firstName lastName specialty profileImage title location')
-    if (!appointment) return res.status(404).json({ error: 'Appointment not found' })
-    res.json(appointment)
+    const { rows: pRows } = await pool.query('SELECT id FROM patients WHERE clerk_id = $1', [req.auth.userId])
+    if (!pRows.length) return res.status(404).json({ error: 'Patient not found' })
+
+    const { rows } = await pool.query(
+      `SELECT a.*, d.first_name, d.last_name, d.specialty, d.profile_image AS doctor_profile_image, d.title, d.location AS doctor_location
+       FROM appointments a JOIN doctors d ON d.id = a.doctor_id
+       WHERE a.id = $1 AND a.patient_id = $2`,
+      [req.params.id, pRows[0].id]
+    )
+    if (!rows.length) return res.status(404).json({ error: 'Appointment not found' })
+    res.json(rows[0])
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 }
 
-module.exports = { syncPatient, getMe, getDashboard, updateProfileImage, bookAppointment, getMyAppointments, getAppointmentById, getReminders, uploadReport }
+module.exports = { syncPatient, getMe, getDashboard, updateProfile, updateProfileImage, bookAppointment, getMyAppointments, getAppointmentById, getReminders, uploadReport }

@@ -1,9 +1,9 @@
 require('dotenv').config()
 const express = require('express')
-const mongoose = require('mongoose')
-const cors = require('cors')
-const http = require('http')
+const cors    = require('cors')
+const http    = require('http')
 const { Server } = require('socket.io')
+const pool    = require('./src/db')
 
 const doctorRoutes       = require('./src/routes/doctor')
 const appointmentRoutes  = require('./src/routes/appointment')
@@ -18,9 +18,8 @@ const app    = express()
 const server = http.createServer(app)
 const io     = new Server(server, { cors: { origin: '*' } })
 
-app.use(cors({ origin: '*', credentials: true }))
+app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }))
 app.use(express.json({ limit: '10mb' }))
-app.use(express.urlencoded({ limit: '10mb', extended: true }))
 
 app.use('/api/doctors',       doctorRoutes)
 app.use('/api/appointments',  appointmentRoutes)
@@ -46,7 +45,6 @@ io.on('connection', (socket) => {
     onlineUsers[userId] = socket.id
     socket.userId = userId
     console.log(`[Socket] Registered: ${userId} -> ${socket.id}`)
-    console.log(`[Socket] Online users:`, Object.keys(onlineUsers))
     io.emit('online-users', Object.keys(onlineUsers))
   })
 
@@ -82,27 +80,21 @@ io.on('connection', (socket) => {
     }
   })
 
-  // ── Chat ──────────────────────────────────────────────────────────────────
-  socket.on('join-chat', (roomId) => {
-    socket.join(roomId)
-  })
+  socket.on('join-chat', (roomId) => socket.join(roomId))
 
   socket.on('chat-message', ({ roomId, message }) => {
     io.to(roomId).emit('chat-message', message)
   })
 
-  socket.on('typing', ({ roomId, name }) => {
-    socket.to(roomId).emit('typing', { name })
-  })
+  socket.on('typing', ({ roomId, name }) => socket.to(roomId).emit('typing', { name }))
 
-  socket.on('stop-typing', ({ roomId }) => {
-    socket.to(roomId).emit('stop-typing')
-  })
+  socket.on('stop-typing', ({ roomId }) => socket.to(roomId).emit('stop-typing'))
 })
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('MongoDB connected')
+pool.connect()
+  .then(client => {
+    client.release()
+    console.log('PostgreSQL connected')
     server.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`))
   })
-  .catch(err => { console.error('MongoDB connection error:', err); process.exit(1) })
+  .catch(err => { console.error('PostgreSQL connection error:', err); process.exit(1) })
