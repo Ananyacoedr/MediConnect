@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useUser, useClerk, useAuth } from '@clerk/clerk-react'
 import { useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
