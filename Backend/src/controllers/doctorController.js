@@ -137,7 +137,8 @@ const getAllAppointments = async (req, res) => {
       `SELECT a.*,
         p.first_name, p.last_name, p.email AS patient_email,
         p.phone AS patient_phone, p.gender AS patient_gender_field,
-        p.dob AS patient_dob, p.profile_image AS patient_profile_image
+        p.dob AS patient_dob, p.profile_image AS patient_profile_image,
+        p.clerk_id AS patient_clerk_id
        FROM appointments a
        JOIN patients p ON p.id = a.patient_id
        WHERE a.doctor_id = $1

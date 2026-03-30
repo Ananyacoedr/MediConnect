@@ -13,7 +13,7 @@ import {
   HeartPulse, Search, CalendarPlus, Video, FileText,
   Pill, Truck, Bell, History, CalendarDays, CheckCircle,
   Clock, ChevronRight, Loader2, Camera, UserCircle, X, MapPin,
-  Stethoscope, Copy, MessageSquare
+  Stethoscope, MessageSquare
 } from 'lucide-react'
 
 const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'
@@ -455,20 +455,12 @@ const BookingModal = ({ onClose, onBooked }) => {
     }
   }
 
-  const roomLink = bookedAppt ? `${window.location.origin}/video/${bookedAppt._id}` : null
-  const [copied, setCopied] = useState(false)
-  const copyLink = () => {
-    navigator.clipboard.writeText(roomLink)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
           <p className="font-semibold text-gray-900 dark:text-gray-100">Book Appointment</p>
-          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
 
         {bookedAppt ? (
@@ -478,38 +470,13 @@ const BookingModal = ({ onClose, onBooked }) => {
                 <CheckCircle size={28} className="text-green-500" />
               </div>
               <p className="font-semibold text-gray-900 dark:text-gray-100">Appointment Booked!</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Your request has been sent. You'll be notified once confirmed.</p>
-            </div>
-
-            {(form.consultationType === 'video' || form.consultationType === 'audio') && roomLink && (
-              <div className="bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900/30 border border-purple-200 rounded-xl p-4 space-y-3">
-                <p className="text-xs font-semibold text-purple-700 flex items-center gap-1.5">
-                  <Video size={13} /> Video Call Room Link
+              <p className="text-sm text-gray-500 dark:text-gray-400">Your request has been sent. You'll be notified once the doctor confirms.</p>
+              {(form.consultationType === 'video' || form.consultationType === 'audio') && (
+                <p className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg px-3 py-2">
+                  The doctor will share the video call link once they confirm your appointment.
                 </p>
-                <p className="text-xs text-purple-800 font-mono break-all">{roomLink}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Share this link with your doctor so you can both join the call instantly.</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={copyLink}
-                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                      copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-900 border border-purple-300 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:bg-purple-900/30 dark:bg-purple-900/30'
-                    }`}
-                  >
-                    {copied ? '✓ Copied!' : 'Copy Link'}
-                  </button>
-                  <a
-                    href={roomLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={onClose}
-                    className="flex-1 py-2 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-center"
-                  >
-                    Join Now
-                  </a>
-                </div>
-              </div>
-            )}
-
+              )}
+            </div>
             <button onClick={onClose} className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Done</button>
           </div>
         ) : (
@@ -917,86 +884,74 @@ const FindMyDoctorsModal = ({ onClose, navigate, initialSpecialty = 'All' }) => 
 }
 
 const ChatStartModal = ({ onClose, navigate, user }) => {
-  const [friendName, setFriendName] = useState('')
-  const [friendEmail, setFriendEmail] = useState('')
-  const [copied, setCopied] = useState(false)
+  const { getToken } = useAuth()
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading]           = useState(true)
 
-  const roomId = `chat_${user?.id?.slice(-8) || Math.random().toString(36).slice(2, 8)}`
-  const myName = user?.firstName || 'Me'
-  const chatLink = `${window.location.origin}/chat/${roomId}?name=${encodeURIComponent(friendName || 'Friend')}`
+  useEffect(() => {
+    apiFetch('/patients/appointments', getToken)
+      .then(data => {
+        // Get unique doctors only
+        const seen = new Set()
+        const unique = data.filter(a => {
+          if (seen.has(a.doctor_id)) return false
+          seen.add(a.doctor_id); return true
+        })
+        setAppointments(unique)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(chatLink)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const startChat = () => {
+  const startChat = (appt) => {
+    const roomId = `chat_${user?.id}_${appt.doctor_clerk_id}`
+    console.log('[Patient Chat] roomId:', roomId)
     onClose()
-    navigate(`/chat/${roomId}?name=${encodeURIComponent(myName)}`)
+    navigate(`/chat/${roomId}?name=${encodeURIComponent(user?.firstName || 'Patient')}&otherName=${encodeURIComponent(`${appt.title || 'Dr.'} ${appt.first_name} ${appt.last_name}`)}`)
   }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800">
           <div className="flex items-center gap-2">
             <MessageSquare size={18} className="text-blue-600 dark:text-blue-400" />
-            <p className="font-semibold text-gray-900 dark:text-gray-100">Start a Chat</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Chat with Your Doctor</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-300"><X size={20} /></button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Enter your friend's details, share the link, and start chatting instantly.</p>
-
-          <div>
-            <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Friend's Name *</label>
-            <input
-              type="text"
-              placeholder="e.g. Dr. John"
-              value={friendName}
-              onChange={e => setFriendName(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">Friend's Email (optional)</label>
-            <input
-              type="email"
-              placeholder="e.g. friend@gmail.com"
-              value={friendEmail}
-              onChange={e => setFriendEmail(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-
-          {friendName && (
-            <div className="bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 border border-blue-200 rounded-xl p-3 space-y-2">
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Share this link with {friendName}:</p>
-              <p className="text-xs text-blue-800 font-mono break-all">{chatLink}</p>
-              <button
-                onClick={copyLink}
-                className={`w-full py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                  copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-900 border border-blue-300 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30'
-                }`}
-              >
-                {copied ? '✓ Copied!' : 'Copy Link'}
-              </button>
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-2">
+          {loading && <div className="flex items-center gap-2 text-gray-400 py-6 justify-center"><Loader2 size={16} className="animate-spin" /> Loading...</div>}
+          {!loading && appointments.length === 0 && (
+            <div className="text-center py-8 space-y-2">
+              <MessageSquare size={32} className="text-gray-300 mx-auto" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">No doctors found.</p>
+              <p className="text-xs text-gray-400">Book an appointment first to chat with a doctor.</p>
             </div>
           )}
-
-          <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-950">Cancel</button>
+          {!loading && appointments.map(appt => (
             <button
-              onClick={startChat}
-              disabled={!friendName.trim()}
-              className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              key={appt.doctor_id}
+              onClick={() => startChat(appt)}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
             >
-              <MessageSquare size={14} /> Start Chat
+              {appt.doctor_profile_image
+                ? <img src={appt.doctor_profile_image} className="w-10 h-10 rounded-full object-cover border shrink-0" alt="doc" />
+                : <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold shrink-0">
+                    {appt.first_name?.[0]}{appt.last_name?.[0]}
+                  </div>
+              }
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  {appt.title} {appt.first_name} {appt.last_name}
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">{appt.specialty}</p>
+                <p className="text-xs text-gray-400">{appt.status} · {new Date(appt.date).toLocaleDateString()}</p>
+              </div>
+              <MessageSquare size={16} className="text-gray-400 shrink-0" />
             </button>
-          </div>
+          ))}
         </div>
       </div>
     </div>
@@ -1008,8 +963,8 @@ const PatientDashboard = () => {
   const { signOut } = useClerk()
   const { getToken } = useAuth()
   const navigate = useNavigate()
-  const { data, loading, error, refetch } = usePatientDashboard()
   const [profileImage, setProfileImage] = useState(null)
+
   const [uploading, setUploading] = useState(false)
   const [showBooking, setShowBooking]               = useState(false)
   const [showReminders, setShowReminders]           = useState(false)
@@ -1029,7 +984,8 @@ const PatientDashboard = () => {
   const firedRef = useRef(new Set())
   const fileInputRef = useRef(null)
   const socketRef = useRef(null)
-  useSyncUser()
+  const synced = useSyncUser()
+  const { data, loading, error, refetch } = usePatientDashboard(synced)
 
   // Poll for incoming call from doctor (doctor starts call from ConsultationPage)
   useEffect(() => {
@@ -1471,3 +1427,4 @@ const PatientDashboard = () => {
 }
 
 export default PatientDashboard
+

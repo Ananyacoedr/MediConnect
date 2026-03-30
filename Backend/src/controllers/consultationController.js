@@ -117,7 +117,7 @@ const getPreviousConsultations = async (req, res) => {
     const { rows } = await pool.query(
       `SELECT a.*, p.first_name, p.last_name, p.email AS patient_email, p.gender AS patient_gender_field
        FROM appointments a JOIN patients p ON p.id = a.patient_id
-       WHERE a.doctor_id = $1 AND a.status = 'Completed'
+       WHERE a.doctor_id = $1 AND a.status IN ('Completed', 'Confirmed')
        ORDER BY a.date DESC LIMIT 50`,
       [dRows[0].id]
     )

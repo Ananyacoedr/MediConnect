@@ -15,10 +15,10 @@ import { ProfileSection } from '@/components/pages/DoctorProfile'
 import {
   HeartPulse, CalendarDays, Users, BookCheck, Clock,
   ChevronRight, Loader2,
-  LayoutDashboard, UserCircle, CalendarCheck, LogOut,
+  LayoutDashboard, UserCircle, CalendarCheck,
   Video, Phone, Mic, Copy, Check,
   CheckCircle2, CalendarClock,
-  DollarSign, ClipboardList, Stethoscope, History, Search, Bell, X
+  DollarSign, ClipboardList, Stethoscope, History, Search, Bell, X, MessageSquare
 } from 'lucide-react'
 const statusStyle = {
   Confirmed: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
@@ -33,6 +33,7 @@ const NAV_ITEMS = [
   { key: 'patients', icon: Users, label: 'My Patients' },
   { key: 'appointments', icon: CalendarCheck, label: 'View Appointments' },
   { key: 'consultations', icon: Video, label: 'Consultations' },
+  { key: 'chat', icon: MessageSquare, label: 'Chat' },
   { key: 'availability', icon: CalendarClock, label: 'My Availability' },
   { key: 'previous', icon: History, label: 'Past Consultations' },
 ]
@@ -80,7 +81,7 @@ const ConsultationsSection = ({ navigate }) => {
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow p-4 space-y-3">
         <div className="flex items-start gap-3">
           {appt.patient?.profileImage
-            ? <img src={appt.patient.profileImage} className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 shrink-0" alt="patient" />
+            ? <img src={appt.patient_profile_image} className="w-11 h-11 rounded-full object-cover border-2 border-blue-100 shrink-0" alt="patient" />
             : <div className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold shrink-0">
               {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
             </div>
@@ -182,6 +183,74 @@ const ConsultationsSection = ({ navigate }) => {
   )
 }
 
+// ── Consultation Row ─────────────────────────────────────────────────────
+const ConsultationRow = ({ c, navigate }) => {
+  const [copied, setCopied] = useState(false)
+  const [showLink, setShowLink] = useState(false)
+  const roomURL = `${window.location.origin}/video/${c.id}`
+  return (
+    <div className="py-4 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold shrink-0">
+            {c.first_name?.[0]}{c.last_name?.[0]}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{c.first_name} {c.last_name}</p>
+            <div className="flex items-center gap-3 mt-0.5">
+              <span className="flex items-center gap-1 text-xs text-gray-400">
+                <CalendarDays size={11} /> {new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+              <span className="flex items-center gap-1 text-xs text-gray-400">
+                <Clock size={11} /> {c.time}
+              </span>
+              {c.diagnosis && <span className="text-xs text-gray-400 truncate max-w-[160px]">· {c.diagnosis}</span>}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[c.status]}`}>{c.status}</span>
+          {c.fee_paid && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Paid</span>}
+          {c.consultation_fee > 0 && <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">${c.consultation_fee}</span>}
+          <Button size="sm" variant="outline" className="h-8 px-3 text-xs" onClick={() => navigate(`/consultation/${c.id}`)}>View</Button>
+        </div>
+      </div>
+
+      {c.status === 'Confirmed' && (
+        <div className="ml-13">
+          <button
+            onClick={() => setShowLink(l => !l)}
+            className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:underline"
+          >
+            <Video size={12} /> {showLink ? 'Hide Link' : 'Share Video Call Link'}
+          </button>
+          {showLink && (
+            <div className="mt-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl p-3 space-y-2">
+              <p className="text-xs text-indigo-600 dark:text-indigo-300 font-medium">Share this link with your patient:</p>
+              <p className="text-xs text-indigo-800 dark:text-indigo-200 font-mono break-all">{roomURL}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { navigator.clipboard.writeText(roomURL); setCopied(true); setTimeout(() => setCopied(false), 2500) }}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                    copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-700 border border-indigo-300 text-indigo-600 hover:bg-indigo-50'
+                  }`}
+                >
+                  {copied ? '✓ Copied!' : 'Copy Link'}
+                </button>
+                <a href={roomURL} target="_blank" rel="noreferrer"
+                  className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-center"
+                >
+                  Join Now
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Previous Consultations Section ───────────────────────────────────────
 const PreviousConsultationsSection = ({ getToken }) => {
   const navigate = useNavigate()
@@ -201,7 +270,7 @@ const PreviousConsultationsSection = ({ getToken }) => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Completed Consultations</CardTitle>
+            <CardTitle>Consultations</CardTitle>
             <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
               {consultations.length} total
             </span>
@@ -213,46 +282,11 @@ const PreviousConsultationsSection = ({ getToken }) => {
           ) : consultations.length === 0 ? (
             <div className="flex flex-col items-center py-10 text-gray-400 gap-2">
               <History size={36} strokeWidth={1} />
-              <p className="text-sm">No completed consultations yet.</p>
+              <p className="text-sm">No consultations yet.</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
-              {consultations.map(c => (
-                <div key={c._id} className="flex items-center justify-between py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold shrink-0">
-                      {c.patient?.firstName?.[0]}{c.patient?.lastName?.[0]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {c.patient.firstName} {c.patient.lastName}
-                      </p>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <CalendarDays size={11} /> {new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-400">
-                          <Clock size={11} /> {c.time}
-                        </span>
-                        {c.diagnosis && (
-                          <span className="text-xs text-gray-400 truncate max-w-[160px]">· {c.diagnosis}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {c.feePaid && (
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Paid</span>
-                    )}
-                    {c.consultationFee > 0 && (
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">${c.consultationFee}</span>
-                    )}
-                    <Button size="sm" variant="outline" className="h-8 px-3 text-xs" onClick={() => navigate(`/consultation/${c._id}`)}>
-                      View
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              {consultations.map(c => <ConsultationRow key={c.id} c={c} navigate={navigate} />)}
             </div>
           )}
         </CardContent>
@@ -399,7 +433,7 @@ const PatientsSection = ({ getToken, navigate }) => {
                 <div key={appt._id} className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-3">
                     {appt.patient?.profileImage
-                      ? <img src={appt.patient.profileImage} className="w-10 h-10 rounded-full object-cover border" alt="patient" />
+                      ? <img src={appt.patient_profile_image} className="w-10 h-10 rounded-full object-cover border" alt="patient" />
                       : <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold">
                         {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
                       </div>
@@ -419,6 +453,137 @@ const PatientsSection = ({ getToken, navigate }) => {
           )}
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+// ── Chat Section ─────────────────────────────────────────────────────────
+const ChatSection = ({ navigate, user }) => {
+  const { getToken } = useAuth()
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    apiFetch('/doctors/appointments', getToken)
+      .then(data => {
+        // Get unique patients only
+        const seen = new Set()
+        const unique = data.filter(a => {
+          if (seen.has(a.patient_id)) return false
+          seen.add(a.patient_id); return true
+        })
+        setAppointments(unique)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [getToken])
+
+  const openChat = (appt) => {
+    const roomId = `chat_${appt.patient_clerk_id}_${user?.id}`
+    console.log('[Doctor Chat] roomId:', roomId, 'patient_clerk_id:', appt.patient_clerk_id, 'doctor id:', user?.id)
+    navigate(`/chat/${roomId}?name=${encodeURIComponent(user?.firstName || 'Doctor')}&otherName=${encodeURIComponent(`${appt.first_name} ${appt.last_name}`)}`)
+  }
+
+  return (
+    <div className="space-y-4">
+      <SectionTitle>Chat with Patients</SectionTitle>
+      <Card>
+        <CardContent className="pt-4">
+          {loading ? (
+            <div className="flex items-center gap-2 text-gray-400 py-8 justify-center">
+              <Loader2 size={16} className="animate-spin" /> Loading patients...
+            </div>
+          ) : appointments.length === 0 ? (
+            <div className="flex flex-col items-center py-10 text-gray-400 gap-2">
+              <MessageSquare size={36} strokeWidth={1} />
+              <p className="text-sm">No patients yet. Patients will appear here after booking.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {appointments.map(appt => (
+                <div key={appt.patient_id} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    {appt.patient_profile_image
+                      ? <img src={appt.patient_profile_image} className="w-10 h-10 rounded-full object-cover border" alt="patient" />
+                      : <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-sm font-bold">
+                          {appt.first_name?.[0]}{appt.last_name?.[0]}
+                        </div>
+                    }
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.first_name} {appt.last_name}</p>
+                      <p className="text-xs text-gray-400">{appt.patient_email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openChat(appt)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors"
+                  >
+                    <MessageSquare size={13} /> Chat
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ── Confirmed Appointment Actions with Share Link ────────────────────────
+const ConfirmedActions = ({ appt, navigate, onCancel, updating }) => {
+  const [copied, setCopied] = useState(false)
+  const [showLink, setShowLink] = useState(false)
+  const roomURL = `${window.location.origin}/video/${appt._id}`
+  const copyLink = () => {
+    navigator.clipboard.writeText(roomURL)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+  return (
+    <div className="space-y-2 pt-1">
+      <div className="flex gap-2">
+        <Button size="sm" className="h-8 px-4 text-xs" onClick={() => navigate(`/consultation/${appt._id}`)}>
+          Start Consultation
+        </Button>
+        <Button
+          size="sm" variant="outline" className="h-8 px-4 text-xs"
+          onClick={() => setShowLink(l => !l)}
+        >
+          <Video size={12} className="mr-1" /> Share Video Link
+        </Button>
+        <Button
+          size="sm" variant="outline" className="h-8 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50"
+          disabled={updating === appt._id}
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+      </div>
+      {showLink && (
+        <div className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-xl p-3 space-y-2">
+          <p className="text-xs text-indigo-600 dark:text-indigo-300 font-medium">Share this link with your patient to join the video call:</p>
+          <p className="text-xs text-indigo-800 dark:text-indigo-200 font-mono break-all">{roomURL}</p>
+          <div className="flex gap-2">
+            <button
+              onClick={copyLink}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                copied ? 'bg-green-500 text-white' : 'bg-white dark:bg-gray-700 border border-indigo-300 text-indigo-600 hover:bg-indigo-50'
+              }`}
+            >
+              {copied ? '✓ Copied!' : 'Copy Link'}
+            </button>
+            <a
+              href={roomURL}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-center"
+            >
+              Join Now
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -494,7 +659,7 @@ const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) =>
               {filtered.map(appt => {
                 const isOpen = expanded === appt._id
                 const age = appt.patient?.dob
-                  ? Math.floor((new Date() - new Date(appt.patient.dob)) / (365.25 * 24 * 60 * 60 * 1000))
+                  ? Math.floor((new Date() - new Date(appt.patient_dob)) / (365.25 * 24 * 60 * 60 * 1000))
                   : null
                 return (
                   <div key={appt._id} className="py-4">
@@ -502,7 +667,7 @@ const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) =>
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         {appt.patient?.profileImage
-                          ? <img src={appt.patient.profileImage} className="w-10 h-10 rounded-full object-cover border shrink-0" alt="patient" />
+                          ? <img src={appt.patient_profile_image} className="w-10 h-10 rounded-full object-cover border shrink-0" alt="patient" />
                           : <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center text-purple-600 dark:text-purple-300 text-sm font-bold shrink-0">
                             {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
                           </div>
@@ -591,22 +756,18 @@ const AppointmentsSection = ({ getToken, updateAppointmentStatus, navigate }) =>
                           </div>
                         )}
                         {appt.status === 'Confirmed' && (
-                          <div className="flex gap-2 pt-1">
-                            <Button
-                              size="sm" className="h-8 px-4 text-xs"
-                              onClick={() => navigate(`/consultation/${appt._id}`)}
-                            >
-                              Start Consultation
-                            </Button>
-                            <Button
-                              size="sm" variant="outline" className="h-8 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                              disabled={updating === appt._id}
-                              onClick={() => handleStatus(appt._id, 'Cancelled')}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
+                          <ConfirmedActions appt={appt} navigate={navigate} onCancel={() => handleStatus(appt._id, 'Cancelled')} updating={updating} />
                         )}
+                        {/* Chat button for any appointment */}
+                        <button
+                          onClick={() => {
+                            const roomId = `chat_${appt.patient_clerk_id}_${user?.id}`
+                            navigate(`/chat/${roomId}?name=${encodeURIComponent(data?.doctor?.firstName || 'Doctor')}&otherName=${encodeURIComponent(`${appt.first_name} ${appt.last_name}`)}`)
+                          }}
+                          className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                        >
+                          <MessageSquare size={12} /> Chat with patient
+                        </button>
                         {appt.status === 'Completed' && (
                           <Button size="sm" variant="outline" className="h-8 px-4 text-xs mt-1"
                             onClick={() => navigate(`/consultation/${appt._id}`)}
@@ -635,14 +796,18 @@ const DoctorDashboard = () => {
   const { signOut } = useClerk()
   const { getToken } = useAuth()
   const navigate = useNavigate()
-  const { data, loading, error, updateAppointmentStatus } = useDashboard()
-  const [active, setActive] = useState('overview')
-  const [newBookings, setNewBookings] = useState([]) // real-time incoming bookings
-  const pollRef = useRef(null)
-  const socketRef = useRef(null)
-  useSyncUser()
+  const synced = useSyncUser()
 
-  // Register doctor with socket for real-time notifications
+
+
+
+
+  const { data, loading, error, updateAppointmentStatus } = useDashboard(synced)
+  const [active, setActive] = useState('overview')
+
+  const [newBookings, setNewBookings] = useState([])
+
+  const socketRef = useRef(null)
   useEffect(() => {
     if (!user?.id) return
     console.log('[Doctor] Connecting socket with userId:', user.id)
@@ -655,6 +820,21 @@ const DoctorDashboard = () => {
     socket.on('new-booking', (booking) => {
       console.log('[Doctor] New booking received:', booking)
       setNewBookings(prev => [...prev, booking])
+      // Play notification sound
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)()
+        const beep = (freq, start, dur) => {
+          const o = ctx.createOscillator()
+          const g = ctx.createGain()
+          o.connect(g); g.connect(ctx.destination)
+          o.frequency.value = freq; o.type = 'sine'
+          g.gain.setValueAtTime(0.4, ctx.currentTime + start)
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur)
+          o.start(ctx.currentTime + start)
+          o.stop(ctx.currentTime + start + dur)
+        }
+        beep(520, 0, 0.15); beep(660, 0.2, 0.15); beep(800, 0.4, 0.3)
+      } catch {}
     })
     socket.on('connect_error', (err) => console.log('[Doctor] Socket error:', err.message))
     return () => socket.disconnect()
@@ -825,7 +1005,7 @@ const DoctorDashboard = () => {
                             <div className="absolute -left-4 top-1 w-2.5 h-2.5 rounded-full border-2 border-blue-500 bg-white dark:bg-gray-800" />
                             <div className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-xl px-3 py-2">
                               <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient.firstName} {appt.patient.lastName}</p>
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.first_name} {appt.last_name}</p>
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[appt.status]}`}>{appt.status}</span>
                               </div>
                               <p className="text-xs text-gray-400 mt-0.5"><Clock size={10} className="inline mr-1" />{appt.time}</p>
@@ -861,7 +1041,7 @@ const DoctorDashboard = () => {
                               {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient.firstName} {appt.patient.lastName}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{appt.first_name} {appt.last_name}</p>
                               <p className="text-xs text-gray-400">{new Date(appt.date).toLocaleDateString()} · {appt.time}</p>
                             </div>
                           </div>
@@ -911,6 +1091,10 @@ const DoctorDashboard = () => {
           {/* CONSULTATIONS */}
           {active === 'consultations' && (
             <ConsultationsSection navigate={navigate} />
+          )}
+
+          {active === 'chat' && (
+            <ChatSection navigate={navigate} user={user} />
           )}
 
           {/* PREVIOUS CONSULTATIONS */}

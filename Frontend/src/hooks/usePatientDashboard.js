@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useAuth, useUser } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 
-export const usePatientDashboard = () => {
+export const usePatientDashboard = (synced) => {
   const { getToken } = useAuth()
   const { user, isLoaded } = useUser()
   const [data, setData]       = useState(null)
@@ -10,11 +10,10 @@ export const usePatientDashboard = () => {
   const [error, setError]     = useState(null)
 
   const load = useCallback(async () => {
-    if (!isLoaded || !user) return
+    if (!isLoaded || !user || !synced) return
     try {
       setLoading(true)
       setError(null)
-      // Use userId directly — works for both Gmail and email/password
       const result = await apiFetch('/patients/dashboard', user.id)
       setData(result)
     } catch (err) {
@@ -22,7 +21,7 @@ export const usePatientDashboard = () => {
     } finally {
       setLoading(false)
     }
-  }, [user, isLoaded])
+  }, [user, isLoaded, synced])
 
   useEffect(() => { load() }, [load])
 

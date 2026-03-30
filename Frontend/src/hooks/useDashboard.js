@@ -2,14 +2,14 @@ import { useEffect, useState, useCallback } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 
-export const useDashboard = () => {
+export const useDashboard = (synced) => {
   const { user, isLoaded } = useUser()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
   const fetchDashboard = useCallback(async () => {
-    if (!isLoaded || !user) return
+    if (!isLoaded || !user || !synced) return
     try {
       setLoading(true)
       const [result, earnings] = await Promise.all([
@@ -22,7 +22,7 @@ export const useDashboard = () => {
     } finally {
       setLoading(false)
     }
-  }, [user, isLoaded])
+  }, [user, isLoaded, synced])
 
   useEffect(() => { fetchDashboard() }, [fetchDashboard])
 
