@@ -37,10 +37,10 @@ const StartConsultation = () => {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:bg-gray-900 flex flex-col transition-colors">
 
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+      <header className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 border-gray-200 dark:border-gray-800 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/doctor-dashboard')}
@@ -48,7 +48,7 @@ const StartConsultation = () => {
           >
             <ArrowLeft size={16} /> Dashboard
           </button>
-          <div className="flex items-center gap-2 text-blue-600 font-bold text-xl">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-bold text-xl">
             <HeartPulse size={22} /> MediConnect
           </div>
         </div>
@@ -65,7 +65,7 @@ const StartConsultation = () => {
         {/* Search + Filter */}
         <div className="flex gap-3 mb-6">
           <div className="relative flex-1">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -96,11 +96,11 @@ const StartConsultation = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex items-center justify-center py-12 gap-2 text-gray-400">
+              <div className="flex items-center justify-center py-12 gap-2 text-gray-400 dark:text-gray-500">
                 <Loader2 size={20} className="animate-spin" /> Loading appointments...
               </div>
             ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center py-12 text-gray-400 gap-2">
+              <div className="flex flex-col items-center py-12 text-gray-400 dark:text-gray-500 gap-2">
                 <CalendarDays size={36} strokeWidth={1} />
                 <p className="text-sm">No appointments found.</p>
               </div>
@@ -109,22 +109,22 @@ const StartConsultation = () => {
                 {filtered.map(appt => (
                   <div key={appt._id} className="flex items-center justify-between py-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-sm shrink-0">
-                        {appt.patient.firstName[0]}{appt.patient.lastName[0]}
+                      <div className="w-11 h-11 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400 dark:text-blue-300 font-bold text-sm shrink-0">
+                        {appt.patient?.firstName?.[0]}{appt.patient?.lastName?.[0]}
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {appt.patient.firstName} {appt.patient.lastName}
                         </p>
                         <div className="flex items-center gap-3 mt-0.5">
-                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                             <CalendarDays size={11} /> {new Date(appt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
-                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                          <span className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                             <Clock size={11} /> {appt.time}
                           </span>
                           {appt.reason && (
-                            <span className="text-xs text-gray-400 truncate max-w-[160px]">· {appt.reason}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[160px]">· {appt.reason}</span>
                           )}
                         </div>
                       </div>

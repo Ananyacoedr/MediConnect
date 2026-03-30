@@ -1,15 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useUser } from '@clerk/clerk-react'
+import { useAuth, useUser } from '@clerk/clerk-react'
 import { apiFetch } from '@/lib/api'
 
-export const usePatientDashboard = () => {
+export const usePatientDashboard = (synced) => {
+  const { getToken } = useAuth()
   const { user, isLoaded } = useUser()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
   const load = useCallback(async () => {
-    if (!isLoaded || !user) return
+    if (!isLoaded || !user || !synced) return
     try {
       setLoading(true)
       setError(null)
@@ -20,7 +21,7 @@ export const usePatientDashboard = () => {
     } finally {
       setLoading(false)
     }
-  }, [user, isLoaded])
+  }, [user, isLoaded, synced])
 
   useEffect(() => { load() }, [load])
 

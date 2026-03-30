@@ -10,4 +10,22 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: ['@zegocloud/zego-uikit-prebuilt'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/@zegocloud/, /node_modules/],
+    },
+  },
+  server: {
+    host: true,
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
 })
